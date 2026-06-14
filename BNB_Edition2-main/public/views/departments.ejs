@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+<div class="container">
+  <h2>Departments - <%= budget.name %></h2>
+  <p><strong>Budget:</strong> ₹<%= budget.totalBudget.toLocaleString() %></p>
+  
+  <div class="add-section">
+    <h3>Add New Department</h3>
+    <form method="post" class="form-inline">
+      <input type="text" name="name" placeholder="Department Name" required>
+      <input type="number" name="budget" placeholder="Allocated Budget" required>
+      <button type="submit">Add Department</button>
+    </form>
+  </div>
+
+  <div class="cards">
+    <% departments.forEach(dept => { %>
+    <div class="card">
+      <h3><%= dept.name %></h3>
+      <p><strong>Allocated Budget:</strong> ₹<%= dept.budget.toLocaleString() %></p>
+      <p><strong>Spent:</strong> ₹<%= dept.spent.toLocaleString() %></p>
+      <p><strong>Remaining:</strong> ₹<%= dept.remaining.toLocaleString() %></p>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: <%= (dept.spent / dept.budget * 100) %>%"></div>
+      </div>
+      <div class="card-actions">
+        <a href="/department/<%= dept._id %>/projects"><button>View Projects</button></a>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<style>
+.form-inline {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 2rem;
+}
+
+.form-inline input {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+}
+
+.form-inline button {
+  padding: 0.75rem 1.5rem;
+  white-space: nowrap;
+}
+</style>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,512 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-section">
+    <h3>💰 Add New Transaction</h3>
+    <p>Create a new transaction for your assigned budgets.</p>
+
+    <form id="transactionForm" enctype="multipart/form-data">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="budgetId">Select Budget *</label>
+          <select id="budgetId" name="budgetId" required>
+            <option value="">Choose a budget...</option>
+            <% assignedBudgets.forEach(budget => { %>
+            <option value="<%= budget._id %>">
+              <%= budget.name %> - <%= budget.department %>
+            </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option value="">Select category...</option>
+            <option value="office_supplies">Office Supplies</option>
+            <option value="travel">Travel</option>
+            <option value="equipment">Equipment</option>
+            <option value="utilities">Utilities</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="description">Description *</label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            required
+            placeholder="Enter transaction description"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Amount (₹) *</label>
+          <input
+            type="number"
+            id="amount"
+            name="amount"
+            step="0.01"
+            required
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="vendor">Vendor/Supplier</label>
+          <input
+            type="text"
+            id="vendor"
+            name="vendor"
+            placeholder="Enter vendor name"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input type="date" id="date" name="date" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="receipt">Receipt Upload</label>
+        <div class="file-upload-area" id="fileUploadArea">
+          <div class="upload-icon">📁</div>
+          <p>Drop receipt here or click to browse</p>
+          <p class="file-types">Supports JPG, PNG, PDF files up to 10MB</p>
+          <input
+            type="file"
+            id="receipt"
+            name="receipt"
+            accept="image/*,.pdf"
+            style="display: none"
+          />
+          <button
+            type="button"
+            onclick="document.getElementById('receipt').click()"
+          >
+            Choose File
+          </button>
+        </div>
+        <div class="file-preview" id="filePreview" style="display: none">
+          <img id="previewImage" src="" alt="Receipt Preview" />
+          <div class="file-info">
+            <h4 id="fileName"></h4>
+            <p id="fileSize"></p>
+            <button type="button" onclick="removeFile()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows="3"
+          placeholder="Additional notes..."
+        ></textarea>
+      </div>
+
+      <div class="ocr-section" id="ocrSection" style="display: none">
+        <h4>🤖 OCR Extracted Data</h4>
+        <div class="ocr-results" id="ocrResults"></div>
+        <button type="button" onclick="useOCRData()" class="btn-ai">
+          Use OCR Data
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="submitBtn">Create Transaction</button>
+        <button type="button" onclick="clearForm()" class="btn-secondary">
+          Clear Form
+        </button>
+        <a href="/editor/dashboard" class="btn-secondary">Back to Dashboard</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--secondary-color);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    background: white;
+    transition: var(--transition);
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .file-upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    text-align: center;
+    background: rgba(241, 245, 249, 0.3);
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .file-upload-area:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+  }
+
+  .file-upload-area.dragover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  .upload-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .file-types {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+  }
+
+  .file-preview {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+    border: 1px solid #e2e8f0;
+  }
+
+  .file-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+  }
+
+  .file-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .ocr-section {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: rgba(37, 99, 235, 0.05);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+  }
+
+  .ocr-results {
+    background: white;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ocr-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .ocr-item:last-child {
+    border-bottom: none;
+  }
+
+  .ocr-label {
+    font-weight: 600;
+    color: var(--secondary-color);
+  }
+
+  .ocr-value {
+    color: var(--primary-color);
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    background: linear-gradient(135deg, #475569, #334155);
+  }
+
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<script>
+  let ocrData = null;
+
+  document
+    .getElementById("receipt")
+    .addEventListener("change", handleFileSelect);
+  document
+    .getElementById("fileUploadArea")
+    .addEventListener("click", () =>
+      document.getElementById("receipt").click()
+    );
+  document
+    .getElementById("fileUploadArea")
+    .addEventListener("dragover", handleDragOver);
+  document
+    .getElementById("fileUploadArea")
+    .addEventListener("drop", handleDrop);
+  document
+    .getElementById("transactionForm")
+    .addEventListener("submit", handleSubmit);
+
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+      displayFilePreview(file);
+      processReceipt(file);
+    }
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault();
+    document.getElementById("fileUploadArea").classList.add("dragover");
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    document.getElementById("fileUploadArea").classList.remove("dragover");
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      document.getElementById("receipt").files = files;
+      displayFilePreview(files[0]);
+      processReceipt(files[0]);
+    }
+  }
+
+  function displayFilePreview(file) {
+    const preview = document.getElementById("filePreview");
+    const uploadArea = document.getElementById("fileUploadArea");
+
+    uploadArea.style.display = "none";
+    preview.style.display = "flex";
+
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("fileSize").textContent = formatFileSize(file.size);
+
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById("previewImage").src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeFile() {
+    document.getElementById("filePreview").style.display = "none";
+    document.getElementById("fileUploadArea").style.display = "block";
+    document.getElementById("receipt").value = "";
+    document.getElementById("ocrSection").style.display = "none";
+    ocrData = null;
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+
+  async function processReceipt(file) {
+    console.log("OCR processing disabled to prevent server crashes");
+    return;
+  }
+
+  function displayOCRResults(data) {
+    const ocrSection = document.getElementById("ocrSection");
+    const ocrResults = document.getElementById("ocrResults");
+
+    ocrSection.style.display = "block";
+
+    let html = "";
+    if (data.vendor)
+      html += `<div class="ocr-item"><span class="ocr-label">Vendor:</span><span class="ocr-value">${data.vendor}</span></div>`;
+    if (data.amount)
+      html += `<div class="ocr-item"><span class="ocr-label">Amount:</span><span class="ocr-value">₹${data.amount}</span></div>`;
+    if (data.date)
+      html += `<div class="ocr-item"><span class="ocr-label">Date:</span><span class="ocr-value">${data.date}</span></div>`;
+    if (data.total)
+      html += `<div class="ocr-item"><span class="ocr-label">Total:</span><span class="ocr-value">₹${data.total}</span></div>`;
+    if (data.tax)
+      html += `<div class="ocr-item"><span class="ocr-label">Tax:</span><span class="ocr-value">₹${data.tax}</span></div>`;
+
+    if (data.items && data.items.length > 0) {
+      html +=
+        '<div class="ocr-item"><span class="ocr-label">Items:</span><span class="ocr-value"></span></div>';
+      data.items.forEach((item) => {
+        html += `<div class="ocr-item" style="margin-left: 1rem;"><span class="ocr-label">${item.description}</span><span class="ocr-value">₹${item.amount}</span></div>`;
+      });
+    }
+
+    ocrResults.innerHTML = html;
+  }
+
+  function useOCRData() {
+    if (!ocrData) return;
+
+    if (ocrData.vendor)
+      document.getElementById("vendor").value = ocrData.vendor;
+    if (ocrData.amount)
+      document.getElementById("amount").value = ocrData.amount;
+
+    if (!document.getElementById("description").value && ocrData.vendor) {
+      document.getElementById(
+        "description"
+      ).value = `Payment to ${ocrData.vendor}`;
+    }
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const submitBtn = document.getElementById("submitBtn");
+
+    const description = formData.get("description");
+    const amount = formData.get("amount");
+    const budgetId = formData.get("budgetId");
+
+    if (!description || !amount || !budgetId) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Creating Transaction...";
+
+    try {
+      console.log("Submitting transaction with data:", {
+        description: formData.get("description"),
+        amount: formData.get("amount"),
+        budgetId: formData.get("budgetId"),
+        category: formData.get("category"),
+        notes: formData.get("notes"),
+      });
+
+      const response = await fetch("/editor/transaction/new", {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("HTTP error response:", errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`
+        );
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error(
+          "Server returned non-JSON response: " + text.substring(0, 200)
+        );
+      }
+
+      const result = await response.json();
+      console.log("Response result:", result);
+
+      if (result.success) {
+        alert("Transaction created successfully!");
+        clearForm();
+        window.location.href = "/editor/dashboard";
+      } else {
+        alert("Failed to create transaction: " + result.error);
+      }
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      alert("Error creating transaction: " + error.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Create Transaction";
+    }
+  }
+
+  function clearForm() {
+    document.getElementById("transactionForm").reset();
+    removeFile();
+    document.getElementById("ocrSection").style.display = "none";
+    ocrData = null;
+  }
+</script>
+
+<%- include('partials/footer') %>

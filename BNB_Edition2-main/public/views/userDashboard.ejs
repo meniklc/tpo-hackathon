@@ -1,0 +1,202 @@
+<%- include('partials/header') %>
+<div class="dashboard-container">
+  <h2>My Dashboard</h2>
+  
+  <!-- Quick Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Total Budgets</h3>
+      <p class="stat-number"><%= userBudgets.length %></p>
+    </div>
+    <div class="stat-card">
+      <h3>Active Projects</h3>
+      <p class="stat-number"><%= activeProjects %></p>
+    </div>
+    <div class="stat-card">
+      <h3>Pending Approvals</h3>
+      <p class="stat-number"><%= pendingApprovals %></p>
+    </div>
+    <div class="stat-card">
+      <h3>Total Allocated</h3>
+      <p class="stat-number">₹<%= totalAllocated.toLocaleString() %></p>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="dashboard-section">
+    <h3>Recent Activity</h3>
+    <div class="activity-list">
+      <% recentActivity.forEach(activity => { %>
+      <div class="activity-item">
+        <span class="activity-icon">📋</span>
+        <div class="activity-content">
+          <p><strong><%= activity.action %></strong> <%= activity.entityName %></p>
+          <small><%= new Date(activity.timestamp).toLocaleDateString() %></small>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- My Budgets -->
+  <div class="dashboard-section">
+    <h3>My Budgets</h3>
+    <div class="cards">
+      <% userBudgets.forEach(budget => { %>
+      <div class="card">
+        <div class="card-header">
+          <h4><%= budget.name %></h4>
+          <span class="status-badge status-<%= budget.status %>"><%= budget.status %></span>
+        </div>
+        <p><strong>Department:</strong> <%= budget.department %></p>
+        <p><strong>Total Budget:</strong> ₹<%= budget.totalBudget.toLocaleString() %></p>
+        <p><strong>Spent:</strong> ₹<%= budget.spent.toLocaleString() %></p>
+        <p><strong>Remaining:</strong> ₹<%= budget.remaining.toLocaleString() %></p>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: <%= (budget.spent / budget.totalBudget * 100) %>%"></div>
+        </div>
+        <div class="card-actions">
+          <a href="/budget/<%= budget._id %>"><button>View Details</button></a>
+          <% if(budget.status === 'draft' || budget.status === 'rejected') { %>
+          <a href="/budget/<%= budget._id %>/edit"><button class="btn-secondary">Edit</button></a>
+          <% } %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="dashboard-section">
+    <h3>Quick Actions</h3>
+    <div class="quick-actions">
+      <a href="/budget/new"><button class="btn-primary">Create New Budget</button></a>
+      <a href="/budget/new/department"><button class="btn-secondary">Add Department</button></a>
+      <a href="/transactions/pending"><button class="btn-secondary">View Pending Transactions</button></a>
+    </div>
+  </div>
+</div>
+
+<style>
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #007bff;
+  margin: 0.5rem 0;
+}
+
+.dashboard-section {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.activity-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.activity-icon {
+  margin-right: 1rem;
+  font-size: 1.2rem;
+}
+
+.activity-content p {
+  margin: 0;
+}
+
+.activity-content small {
+  color: #666;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-draft { background: #f8f9fa; color: #6c757d; }
+.status-pending { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+.status-active { background: #cce5ff; color: #004085; }
+.status-completed { background: #d1ecf1; color: #0c5460; }
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #007bff;
+  transition: width 0.3s ease;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+</style>
+
+<%- include('partials/footer') %>

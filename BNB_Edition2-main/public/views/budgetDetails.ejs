@@ -1,0 +1,1386 @@
+<%- include('partials/header') %>
+<div class="container">
+  <div class="budget-header">
+    <h2><%= budget.name %></h2>
+    <div class="header-actions">
+      <button onclick="exportBudgetReport()" class="btn-export">
+        📥 Export Report
+      </button>
+      <div class="status-badges">
+        <span class="status-badge status-<%= budget.status %>"
+          ><%= budget.status %></span
+        >
+        <% if(budget.type === 'Public') { %>
+        <span class="type-badge type-public">Public</span>
+        <% } else { %>
+        <span class="type-badge type-private">Private</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="chatbot-section">
+    <h3>💬 Ask Questions About This Budget</h3>
+    <div class="chatbot-container">
+      <div class="chatbot-toggle">
+        <button
+          id="chatbotToggle"
+          class="chatbot-btn"
+          onclick="toggleChatbot()"
+        >
+          <span class="chatbot-icon">🤖</span>
+          <span class="chatbot-text">Ask AI Assistant</span>
+        </button>
+      </div>
+      <div id="chatbotWindow" class="chatbot-window" style="display: none">
+        <div class="chatbot-header">
+          <h4>🤖 Budget AI Assistant</h4>
+          <button onclick="toggleChatbot()" class="chatbot-close">
+            &times;
+          </button>
+        </div>
+        <div id="chatbotMessages" class="chatbot-messages">
+          <div class="chatbot-message bot-message">
+            <div class="message-content">
+              <p>
+                Hello! I'm your Budget AI Assistant. I can help you understand
+                this budget, analyze spending patterns, answer questions about
+                transactions, and provide insights. What would you like to know?
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="chatbot-input">
+          <input
+            type="text"
+            id="chatbotInput"
+            placeholder="Ask me anything about this budget..."
+            onkeypress="handleChatbotKeyPress(event)"
+          />
+          <button onclick="sendChatbotMessage()" class="chatbot-send">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="budget-info">
+    <div class="info-grid">
+      <div class="info-item">
+        <strong>Department:</strong> <%= budget.department %>
+      </div>
+      <div class="info-item"><strong>State:</strong> <%= budget.state %></div>
+      <div class="info-item">
+        <strong>Country:</strong> <%= budget.country %>
+      </div>
+      <div class="info-item">
+        <strong>Total Budget:</strong> ₹<%= budget.totalBudget.toLocaleString()
+        %>
+      </div>
+      <div class="info-item">
+        <strong>Spent:</strong> ₹<%= budget.spent.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Remaining:</strong> ₹<%= budget.remaining.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Fiscal Year:</strong> <%= budget.fiscalYear %>
+      </div>
+      <div class="info-item">
+        <strong>Approved By:</strong> <%= budget.approvedBy %>
+      </div>
+      <div class="info-item"><strong>Type:</strong> <%= budget.type %></div>
+    </div>
+
+    <div class="progress-section">
+      <h3>Budget Utilization</h3>
+      <div class="progress-bar large">
+        <div class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p class="progress-text">
+        <%= budget.totalBudget > 0 ? ((budget.spent / budget.totalBudget) *
+        100).toFixed(1) : 0 %>% utilized
+      </p>
+    </div>
+  </div>
+
+  <div class="hierarchy-section">
+    <h3>Fund Flow Hierarchy</h3>
+    <div class="hierarchy-flow">
+      <div class="hierarchy-item">
+        <h4>📊 Budget</h4>
+        <p><%= budget.name %></p>
+        <p>₹<%= budget.totalBudget.toLocaleString() %></p>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="hierarchy-item">
+        <h4>🏢 Departments</h4>
+        <p>Manage departmental allocations</p>
+        <a href="/budget/<%= budget._id %>/departments"
+          ><button>View Departments</button></a
+        >
+      </div>
+      <div class="arrow">↓</div>
+      <div class="hierarchy-item">
+        <h4>📋 Projects</h4>
+        <p>Track project-specific spending</p>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="hierarchy-item">
+        <h4>🏪 Vendors</h4>
+        <p>Manage vendor relationships</p>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="hierarchy-item">
+        <h4>💰 Transactions</h4>
+        <p>Individual expense tracking</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions-section">
+    <a href="/budget/<%= budget._id %>/visualization"
+      ><button class="btn-info">📊 Analytics & Visualization</button></a
+    >
+
+    <% if(session.isAdmin && budget.status === 'pending'){ %>
+    <form
+      method="post"
+      action="/budget/<%= budget._id %>/approve"
+      style="display: inline"
+    >
+      <button type="submit" class="btn-approve">Approve Budget</button>
+    </form>
+    <% } %>
+  </div>
+
+  <!-- Departments Section -->
+  <% if(departments && departments.length > 0) { %>
+  <div class="departments-section">
+    <h3>🏢 Departments</h3>
+    <div class="departments-grid">
+      <% departments.forEach(department => { %>
+      <div class="department-card">
+        <div class="department-header">
+          <h4><%= department.name %></h4>
+          <span class="department-budget"
+            >₹<%= department.budget?.toLocaleString() || 0 %></span
+          >
+        </div>
+        <div class="department-stats">
+          <div class="stat-item">
+            <span class="stat-label">Spent:</span>
+            <span class="stat-value"
+              >₹<%= department.spent?.toLocaleString() || 0 %></span
+            >
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Remaining:</span>
+            <span class="stat-value"
+              >₹<%= department.remaining?.toLocaleString() || 0 %></span
+            >
+          </div>
+        </div>
+        <div class="department-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <span class="progress-text">0.0% utilized</span>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Transactions Section -->
+  <div class="transactions-section">
+    <h3>💰 All Transactions</h3>
+    <% if(transactions && transactions.length > 0) { %>
+    <div class="transactions-list">
+      <% transactions.forEach(transaction => { %>
+      <div class="transaction-card">
+        <div class="transaction-header">
+          <div class="transaction-info">
+            <h4><%= transaction.description %></h4>
+            <div class="transaction-meta">
+              <span class="transaction-date"
+                >📅 <%= new Date(transaction.createdAt).toLocaleDateString()
+                %></span
+              >
+              <span class="transaction-amount"
+                >₹<%= transaction.amount.toLocaleString() %></span
+              >
+            </div>
+          </div>
+          <div class="transaction-status">
+            <span class="status-badge status-<%= transaction.status %>"
+              ><%= transaction.status %></span
+            >
+          </div>
+        </div>
+
+        <div class="transaction-details">
+          <% if(transaction.category) { %>
+          <div class="detail-item">
+            <strong>Category:</strong>
+            <span class="category-badge category-<%= transaction.category %>"
+              ><%= transaction.category %></span
+            >
+          </div>
+          <% } %> <% if(transaction.notes) { %>
+          <div class="detail-item">
+            <strong>Notes:</strong> <%= transaction.notes %>
+          </div>
+          <% } %>
+
+          <div class="detail-item">
+            <strong>Created by:</strong> <%= transaction.createdBy ?
+            transaction.createdBy.name : 'Unknown' %>
+          </div>
+
+          <% if(transaction.approvedBy) { %>
+          <div class="detail-item">
+            <strong>Approved by:</strong> <%= transaction.approvedBy.name %>
+            <br /><strong>Approved on:</strong> <%= new
+            Date(transaction.approvedAt).toLocaleDateString() %>
+          </div>
+          <% } %>
+        </div>
+
+        <% if(transaction.receipt && transaction.receipt.url) { %>
+        <div class="transaction-receipt">
+          <h5>📄 Receipt</h5>
+          <div class="receipt-preview">
+            <img
+              src="<%= transaction.receipt.url %>"
+              alt="Receipt"
+              class="receipt-thumbnail"
+            />
+            <div class="receipt-info">
+              <p>
+                <strong>File:</strong> <%= transaction.receipt.filename ||
+                'Receipt' %>
+              </p>
+              <a
+                href="<%= transaction.receipt.url %>"
+                target="_blank"
+                class="receipt-link"
+                >View Full Receipt</a
+              >
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+        <div class="transaction-hash">
+          <strong>Transaction Hash:</strong>
+          <code class="hash-code"><%= transaction.transactionHash %></code>
+        </div>
+        <% if(transaction.blockchainId) { %>
+        <div class="blockchain-info">
+          <div class="blockchain-badge">
+            <span class="blockchain-icon">⛓️</span>
+            <span class="blockchain-text">Blockchain Verified</span>
+          </div>
+          <div class="blockchain-details">
+            <p>
+              <strong>Block Hash:</strong>
+              <code class="block-hash"><%= transaction.blockHash %></code>
+            </p>
+            <p><strong>Block Index:</strong> <%= transaction.blockIndex %></p>
+            <p>
+              <strong>Blockchain ID:</strong>
+              <code class="blockchain-id"><%= transaction.blockchainId %></code>
+            </p>
+          </div>
+        </div>
+        <% } %>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+    <div class="no-transactions">
+      <div class="empty-icon">📋</div>
+      <h4>No transactions yet</h4>
+      <p>Transactions will appear here once they are added to this budget.</p>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Legacy expenses section for backward compatibility -->
+  <% if(budget.expenses && budget.expenses.length > 0) { %>
+  <div class="legacy-expenses">
+    <h3>Legacy Expenses</h3>
+    <ul>
+      <% budget.expenses.forEach(e=>{ %>
+      <li>
+        <strong><%= e.description %></strong> - ₹<%= e.amount.toLocaleString()
+        %> (Allocated to: <%= e.allocatedTo %>)
+      </li>
+      <% }) %>
+    </ul>
+  </div>
+  <% } %>
+</div>
+
+<style>
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .budget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .btn-export {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-light);
+  }
+
+  .btn-export:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .status-badges {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-draft {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-pending {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .status-approved {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-completed {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .type-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .type-public {
+    background: #e0f2fe;
+    color: #0c4a6e;
+  }
+
+  .type-private {
+    background: #f3e8ff;
+    color: #6b21a8;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .info-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .progress-section {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+  }
+
+  .progress-bar.large {
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1rem 0;
+  }
+
+  .progress-text {
+    text-align: center;
+    font-weight: bold;
+    color: #007bff;
+  }
+
+  .hierarchy-section {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+  }
+
+  .hierarchy-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .hierarchy-item {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    min-width: 200px;
+    border: 2px solid #e9ecef;
+  }
+
+  .hierarchy-item h4 {
+    margin-bottom: 0.5rem;
+    color: #007bff;
+  }
+
+  .arrow {
+    font-size: 2rem;
+    color: #007bff;
+    font-weight: bold;
+  }
+
+  .actions-section {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .btn-primary {
+    background: #007bff;
+    color: white;
+  }
+
+  .btn-approve {
+    background: #28a745;
+    color: white;
+  }
+
+  .legacy-expenses {
+    background: #fff3cd;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border-left: 4px solid #ffc107;
+  }
+
+  /* Transactions Section Styles */
+  /* Departments Section Styles */
+  .departments-section {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+  }
+
+  .departments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .department-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+  }
+
+  .department-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .department-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .department-header h4 {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 600;
+    margin: 0;
+    color: #1e293b;
+  }
+
+  .department-budget {
+    font-weight: 700;
+    color: #007bff;
+    font-size: 1.1rem;
+  }
+
+  .department-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .department-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .department-progress .progress-bar {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .department-progress .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    transition: width 0.3s ease;
+  }
+
+  .department-progress .progress-text {
+    font-size: 0.9rem;
+    color: #64748b;
+    text-align: right;
+  }
+
+  .transactions-section {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+  }
+
+  .transactions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .transaction-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+  }
+
+  .transaction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .transaction-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+    font-family: "Montserrat", sans-serif;
+  }
+
+  .transaction-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .transaction-date {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .transaction-amount {
+    font-weight: 700;
+    color: #007bff;
+    font-size: 1.1rem;
+  }
+
+  .transaction-status {
+    text-align: right;
+  }
+
+  .transaction-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .detail-item strong {
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  .category-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    display: inline-block;
+    width: fit-content;
+  }
+
+  .category-office_supplies {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+  }
+  .category-travel {
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+  }
+  .category-equipment {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+  .category-utilities {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+  }
+  .category-maintenance {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+  .category-other {
+    background: rgba(107, 114, 128, 0.1);
+    color: #374151;
+  }
+
+  .transaction-receipt {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .transaction-receipt h5 {
+    margin: 0 0 1rem 0;
+    color: #374151;
+  }
+
+  .receipt-preview {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .receipt-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .receipt-info p {
+    margin: 0.25rem 0;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .receipt-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .receipt-link:hover {
+    text-decoration: underline;
+  }
+
+  .transaction-hash {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f1f5f9;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .hash-code {
+    background: #e2e8f0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    word-break: break-all;
+    display: block;
+    margin-top: 0.5rem;
+  }
+
+  .blockchain-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(
+      135deg,
+      rgba(34, 197, 94, 0.1),
+      rgba(16, 185, 129, 0.1)
+    );
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+
+  .blockchain-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .blockchain-icon {
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+  }
+
+  .blockchain-text {
+    font-weight: 600;
+    color: #059669;
+    font-size: 0.9rem;
+  }
+
+  .blockchain-details p {
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+    color: #374151;
+  }
+
+  .block-hash,
+  .blockchain-id {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 0.7rem;
+    color: #059669;
+    background: rgba(34, 197, 94, 0.1);
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    word-break: break-all;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .no-transactions {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #64748b;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .no-transactions h4 {
+    margin: 0 0 0.5rem 0;
+    color: #374151;
+  }
+
+  .no-transactions p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.3s ease;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  }
+
+  .file-upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background: rgba(241, 245, 249, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .file-upload-area:hover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.05);
+  }
+
+  .file-upload-area.dragover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+  }
+
+  .upload-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .file-preview {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .file-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .file-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .ocr-section {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 123, 255, 0.2);
+  }
+
+  .ocr-results {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ocr-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .ocr-item:last-child {
+    border-bottom: none;
+  }
+
+  .ocr-label {
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .ocr-value {
+    color: #007bff;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+  }
+
+  .btn-ai {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-ai:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    .hierarchy-flow {
+      flex-direction: column;
+    }
+
+    .arrow {
+      transform: rotate(90deg);
+    }
+
+    .actions-section {
+      flex-direction: column;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+  }
+
+  /* Chatbot Styles */
+  .chatbot-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .chatbot-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .chatbot-toggle {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .chatbot-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    animation: pulse 2s infinite;
+  }
+
+  .chatbot-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  }
+
+  .chatbot-btn:active {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  .chatbot-icon {
+    font-size: 1.5rem;
+    animation: bounce 1s infinite;
+  }
+
+  @keyframes bounce {
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px);
+    }
+    60% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .chatbot-window {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  .chatbot-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chatbot-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .chatbot-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+
+  .chatbot-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .chatbot-messages {
+    height: 300px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+  }
+
+  .chatbot-message {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .bot-message {
+    justify-content: flex-start;
+  }
+
+  .user-message {
+    justify-content: flex-end;
+  }
+
+  .message-content {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .bot-message .message-content {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 15px 15px 15px 5px;
+  }
+
+  .user-message .message-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 5px 15px;
+  }
+
+  .chatbot-input {
+    display: flex;
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .chatbot-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 25px;
+    outline: none;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+  }
+
+  .chatbot-input input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .chatbot-send {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .chatbot-send:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .chatbot-send:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+</style>
+
+<script>
+  const budgetSpent = <%= budget.spent %>;
+  const budgetRemaining = <%= budget.remaining %>;
+  const budgetTotal = <%= budget.totalBudget %>;
+
+  console.log('Budget details page loaded');
+
+  function exportBudgetReport() {
+    const budgetId = '<%= budget._id %>';
+    const budgetName = '<%= budget.name %>';
+
+    const link = document.createElement('a');
+    link.href = `/api/budget/${budgetId}/export/pdf`;
+    link.download = `budget-report-${budgetName.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log('Exporting budget report...');
+  }
+
+  function toggleChatbot() {
+    const chatbotWindow = document.getElementById('chatbotWindow');
+    const chatbotToggle = document.getElementById('chatbotToggle');
+
+    if (chatbotWindow.style.display === 'none') {
+      chatbotWindow.style.display = 'block';
+      chatbotToggle.style.display = 'none';
+      document.getElementById('chatbotInput').focus();
+    } else {
+      chatbotWindow.style.display = 'none';
+      chatbotToggle.style.display = 'flex';
+    }
+  }
+
+  function handleChatbotKeyPress(event) {
+    if (event.key === 'Enter') {
+      sendChatbotMessage();
+    }
+  }
+
+  async function sendChatbotMessage() {
+    const input = document.getElementById('chatbotInput');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    const sendBtn = document.querySelector('.chatbot-send');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+
+    addMessageToChat(message, 'user');
+    input.value = '';
+
+    try {
+      const response = await fetch('/api/chatbot/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          budgetId: '<%= budget._id %>',
+          context: {
+            budgetName: '<%= budget.name %>',
+            department: '<%= budget.department %>',
+            totalBudget: budgetTotal,
+            spent: budgetSpent,
+            remaining: budgetRemaining,
+            status: '<%= budget.status %>'
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        addMessageToChat(data.response, 'bot');
+      } else {
+        addMessageToChat('Sorry, I encountered an error. Please try again.', 'bot');
+      }
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      addMessageToChat('Sorry, I\'m having trouble connecting. Please try again later.', 'bot');
+    }
+
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+  }
+
+  function addMessageToChat(message, sender) {
+    const messagesContainer = document.getElementById('chatbotMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chatbot-message ${sender}-message`;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.innerHTML = `<p>${message}</p>`;
+
+    messageDiv.appendChild(contentDiv);
+    messagesContainer.appendChild(messageDiv);
+
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+</script>
+
+<%- include('partials/footer') %>

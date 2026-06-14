@@ -1,0 +1,72 @@
+<%- include('partials/header') %>
+<div class="container">
+  <h2>Projects - <%= department.name %></h2>
+  <p><strong>Department Budget:</strong> ₹<%= department.budget.toLocaleString() %></p>
+  
+  <div class="add-section">
+    <h3>Add New Project</h3>
+    <form method="post" class="form-grid">
+      <input type="text" name="name" placeholder="Project Name" required>
+      <textarea name="description" placeholder="Project Description" rows="3"></textarea>
+      <input type="number" name="budget" placeholder="Project Budget" required>
+      <input type="date" name="startDate" placeholder="Start Date">
+      <input type="date" name="endDate" placeholder="End Date">
+      <button type="submit">Add Project</button>
+    </form>
+  </div>
+
+  <div class="cards">
+    <% projects.forEach(project => { %>
+    <div class="card">
+      <h3><%= project.name %></h3>
+      <p><strong>Description:</strong> <%= project.description || 'No description' %></p>
+      <p><strong>Budget:</strong> ₹<%= project.budget.toLocaleString() %></p>
+      <p><strong>Spent:</strong> ₹<%= project.spent.toLocaleString() %></p>
+      <p><strong>Remaining:</strong> ₹<%= project.remaining.toLocaleString() %></p>
+      <p><strong>Status:</strong> <span class="status-badge status-<%= project.status %>"><%= project.status %></span></p>
+      <% if(project.startDate) { %>
+      <p><strong>Start Date:</strong> <%= new Date(project.startDate).toLocaleDateString() %></p>
+      <% } %>
+      <% if(project.endDate) { %>
+      <p><strong>End Date:</strong> <%= new Date(project.endDate).toLocaleDateString() %></p>
+      <% } %>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: <%= (project.spent / project.budget * 100) %>%"></div>
+      </div>
+      <div class="card-actions">
+        <a href="/project/<%= project._id %>/vendors"><button>View Vendors</button></a>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<style>
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.form-grid textarea {
+  grid-column: span 2;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  resize: vertical;
+}
+
+.form-grid input {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+}
+
+.form-grid button {
+  grid-column: span 2;
+  padding: 0.75rem;
+}
+</style>
+
+<%- include('partials/footer') %>

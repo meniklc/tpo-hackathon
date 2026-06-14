@@ -1,0 +1,819 @@
+<%- include('partials/header') %>
+<div class="container">
+  <div class="budget-header">
+    <h2><%= budget.name %></h2>
+    <span class="status-badge status-<%= budget.status %>"><%= budget.status %></span>
+  </div>
+  
+  <!-- AI-Generated Summary -->
+  <% if (summary) { %>
+  <div class="ai-summary-section">
+    <h3>🤖 AI Summary</h3>
+    <div class="summary-card">
+      <h4><%= summary.headline %></h4>
+      <ul class="summary-bullets">
+        <% summary.bullets.forEach(bullet => { %>
+        <li><%= bullet %></li>
+        <% }) %>
+      </ul>
+      <div class="summary-numbers">
+        <div class="number-item">
+          <span class="number-label">Total</span>
+          <span class="number-value"><%= summary.numbers.total %></span>
+        </div>
+        <div class="number-item">
+          <span class="number-label">Spent</span>
+          <span class="number-value"><%= summary.numbers.spent %></span>
+        </div>
+        <div class="number-item">
+          <span class="number-label">Remaining</span>
+          <span class="number-value"><%= summary.numbers.remaining %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Interactive Charts Section -->
+  <div class="charts-section">
+    <h3>📊 Visual Analytics</h3>
+    <div class="charts-grid">
+      <div class="chart-container">
+        <h4>Spending Overview</h4>
+        <canvas id="spendingChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h4>Department Allocation</h4>
+        <canvas id="departmentChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <h4>Spending Timeline</h4>
+        <canvas id="timelineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sankey Diagram -->
+  <div class="sankey-section">
+    <h3>🌊 Fund Flow Visualization</h3>
+    <div class="sankey-container">
+      <svg id="sankeyDiagram"></svg>
+    </div>
+  </div>
+
+  <!-- AI-Generated FAQ -->
+  <% if (faq && faq.length > 0) { %>
+  <div class="faq-section">
+    <h3>❓ Frequently Asked Questions</h3>
+    <div class="faq-grid">
+      <% faq.forEach(item => { %>
+      <div class="faq-item">
+        <h4><%= item.q %></h4>
+        <p><%= item.a %></p>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Interactive Chatbot -->
+  <div class="chatbot-section">
+    <h3>💬 Ask Questions</h3>
+    <div class="chatbot-container">
+      <div id="chatbot-messages" class="chatbot-messages"></div>
+      <div class="chatbot-input">
+        <input type="text" id="chatbot-input" placeholder="Ask about this budget...">
+        <button id="chatbot-send">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Section -->
+  <div class="transactions-section">
+    <h3>💰 All Transactions</h3>
+    <% if(transactions && transactions.length > 0) { %>
+    <div class="transactions-list">
+      <% transactions.forEach(transaction => { %>
+      <div class="transaction-card">
+        <div class="transaction-header">
+          <div class="transaction-info">
+            <h4><%= transaction.description %></h4>
+            <div class="transaction-meta">
+              <span class="transaction-date">📅 <%= new Date(transaction.createdAt).toLocaleDateString() %></span>
+              <span class="transaction-amount">₹<%= transaction.amount.toLocaleString() %></span>
+            </div>
+          </div>
+          <div class="transaction-status">
+            <span class="status-badge status-<%= transaction.status %>"><%= transaction.status %></span>
+          </div>
+        </div>
+        <div class="transaction-details">
+          <% if(transaction.category) { %>
+          <div class="detail-item">
+            <strong>Category:</strong> <span class="category-badge category-<%= transaction.category %>"><%= transaction.category %></span>
+          </div>
+          <% } %>
+          <% if(transaction.notes) { %>
+          <div class="detail-item">
+            <strong>Notes:</strong> <%= transaction.notes %>
+          </div>
+          <% } %>
+          <div class="detail-item">
+            <strong>Created by:</strong> <%= transaction.createdBy ? transaction.createdBy.name : 'Unknown' %>
+          </div>
+          <% if(transaction.approvedBy) { %>
+          <div class="detail-item">
+            <strong>Approved by:</strong> <%= transaction.approvedBy.name %>
+            <br><strong>Approved on:</strong> <%= new Date(transaction.approvedAt).toLocaleDateString() %>
+          </div>
+          <% } %>
+        </div>
+        <% if(transaction.receipt && transaction.receipt.url) { %>
+        <div class="transaction-receipt">
+          <h5>📄 Receipt</h5>
+          <div class="receipt-preview">
+            <img src="<%= transaction.receipt.url %>" alt="Receipt" class="receipt-thumbnail">
+            <div class="receipt-info">
+              <p><strong>File:</strong> <%= transaction.receipt.filename || 'Receipt' %></p>
+              <a href="<%= transaction.receipt.url %>" target="_blank" class="receipt-link">View Full Receipt</a>
+            </div>
+          </div>
+        </div>
+        <% } %>
+        <div class="transaction-hash">
+          <strong>Transaction Hash:</strong>
+          <code class="hash-code"><%= transaction.transactionHash %></code>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } else { %>
+    <div class="no-transactions">
+      <div class="empty-icon">📋</div>
+      <h4>No transactions yet</h4>
+      <p>Transactions will appear here once they are added to this budget.</p>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Traditional Budget Details -->
+  <div class="traditional-details">
+    <h3>📋 Detailed Information</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <strong>Department:</strong> <%= budget.department %>
+      </div>
+      <div class="info-item">
+        <strong>State:</strong> <%= budget.state %>
+      </div>
+      <div class="info-item">
+        <strong>City:</strong> <%= budget.city %>
+      </div>
+      <div class="info-item">
+        <strong>Country:</strong> <%= budget.country %>
+      </div>
+      <div class="info-item">
+        <strong>Total Budget:</strong> ₹<%= budget.totalBudget.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Spent:</strong> ₹<%= budget.spent.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Remaining:</strong> ₹<%= budget.remaining.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Fiscal Year:</strong> <%= budget.fiscalYear %>
+      </div>
+      <div class="info-item">
+        <strong>Approved By:</strong> <%= budget.approvedBy %>
+      </div>
+      <div class="info-item">
+        <strong>Type:</strong> <%= budget.type %>
+      </div>
+      <div class="info-item">
+        <strong>Status:</strong> <span class="status-badge status-<%= budget.status %>"><%= budget.status %></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Include Chart.js (local) and D3.js -->
+<script src="/js/vendor/chart.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+
+<script>
+// Load chart data and render charts
+document.addEventListener('DOMContentLoaded', async function() {
+  const budgetId = '<%= budget._id %>';
+  
+  try {
+    // Load and render spending chart
+    const spendingResponse = await fetch(`/api/budget/${budgetId}/charts/spending`);
+    const spendingData = await spendingResponse.json();
+    const spendingCtx = document.getElementById('spendingChart').getContext('2d');
+    new Chart(spendingCtx, spendingData);
+
+    // Load and render department chart
+    const deptResponse = await fetch(`/api/budget/${budgetId}/charts/departments`);
+    const deptData = await deptResponse.json();
+    const deptCtx = document.getElementById('departmentChart').getContext('2d');
+    new Chart(deptCtx, deptData);
+
+    // Load and render timeline chart
+    const timelineResponse = await fetch(`/api/budget/${budgetId}/charts/timeline`);
+    const timelineData = await timelineResponse.json();
+    const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+    new Chart(timelineCtx, timelineData);
+
+    // Load and render Sankey diagram
+    const sankeyResponse = await fetch(`/api/budget/${budgetId}/sankey`);
+    const sankeyData = await sankeyResponse.json();
+    if (sankeyData && sankeyData.nodes && sankeyData.nodes.length > 0) {
+      renderSankeyDiagram(sankeyData);
+    } else {
+      // Show fallback message if no data
+      document.querySelector('.sankey-container').innerHTML = '<p style="text-align: center; color: #64748b; padding: 2rem;">No fund flow data available for this budget.</p>';
+    }
+
+  } catch (error) {
+    console.error('Error loading charts:', error);
+  }
+});
+
+// Render Sankey diagram
+function renderSankeyDiagram(data) {
+  const svg = d3.select("#sankeyDiagram");
+  const width = 800;
+  const height = 400;
+
+  // Clear previous content
+  svg.selectAll("*").remove();
+  svg.attr("width", width).attr("height", height);
+
+  const sankey = d3.sankey()
+    .nodeId(d => d.id)
+    .nodeWidth(15)
+    .nodePadding(10)
+    .extent([[1, 1], [width - 1, height - 5]]);
+
+  const { nodes, links } = sankey(data);
+
+  // Render links
+  svg.append("g")
+    .selectAll("path")
+    .data(links)
+    .join("path")
+    .attr("d", d3.sankeyLinkHorizontal())
+    .attr("fill", "none")
+    .attr("stroke", "#999")
+    .attr("stroke-opacity", 0.5)
+    .attr("stroke-width", d => Math.max(1, d.width));
+
+  // Render nodes
+  svg.append("g")
+    .selectAll("rect")
+    .data(nodes)
+    .join("rect")
+    .attr("x", d => d.x0)
+    .attr("y", d => d.y0)
+    .attr("height", d => d.y1 - d.y0)
+    .attr("width", d => d.x1 - d.x0)
+    .attr("fill", d => {
+      const colors = {
+        'budget': '#2563eb',
+        'department': '#10b981',
+        'project': '#f59e0b',
+        'vendor': '#ef4444',
+        'transaction': '#8b5cf6'
+      };
+      return colors[d.type] || '#64748b';
+    });
+
+  // Render labels
+  svg.append("g")
+    .selectAll("text")
+    .data(nodes)
+    .join("text")
+    .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+    .attr("y", d => (d.y1 + d.y0) / 2)
+    .attr("dy", "0.35em")
+    .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+    .text(d => d.name)
+    .style("font-size", "12px")
+    .style("fill", "#374151");
+}
+
+// Chatbot functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const messagesContainer = document.getElementById('chatbot-messages');
+  const input = document.getElementById('chatbot-input');
+  const sendButton = document.getElementById('chatbot-send');
+
+  function addMessage(content, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+    messageDiv.textContent = content;
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, true);
+    input.value = '';
+
+    try {
+      const response = await fetch('/api/chatbot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          context: {
+            budgetId: '<%= budget._id %>',
+            budgetName: '<%= budget.name %>',
+            budgetData: <%= budgetContext %>
+          }
+        })
+      });
+
+      const data = await response.json();
+      addMessage(data.reply || data.response || 'No response received');
+    } catch (error) {
+      addMessage('Sorry, I encountered an error. Please try again.');
+    }
+  }
+
+  sendButton.addEventListener('click', sendMessage);
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  });
+});
+</script>
+
+<style>
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.ai-summary-section {
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: var(--card-gradient);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+  border-left: 4px solid var(--accent-color);
+}
+
+.summary-card h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+.summary-bullets {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.summary-bullets li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.summary-bullets li::before {
+  content: '✓';
+  color: var(--success-color);
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.summary-numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.number-item {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(37, 99, 235, 0.1);
+  border-radius: var(--border-radius);
+}
+
+.number-label {
+  display: block;
+  font-size: 0.9rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.number-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: 0.25rem;
+}
+
+.charts-section {
+  margin-bottom: 2rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-container {
+  background: var(--card-gradient);
+  padding: 1.5rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.chart-container h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1e293b;
+  text-align: center;
+}
+
+.chart-container canvas {
+  max-height: 300px;
+}
+
+.sankey-section {
+  margin-bottom: 2rem;
+}
+
+.sankey-container {
+  background: var(--card-gradient);
+  padding: 1.5rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+  overflow-x: auto;
+}
+
+.faq-section {
+  margin-bottom: 2rem;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.faq-item {
+  background: var(--card-gradient);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-light);
+}
+
+.faq-item h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.faq-item p {
+  color: #64748b;
+  margin: 0;
+}
+
+.chatbot-section {
+  margin-bottom: 2rem;
+}
+
+.chatbot-container {
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+  overflow: hidden;
+}
+
+.chatbot-messages {
+  height: 300px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.message {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  max-width: 80%;
+}
+
+.message.user {
+  background: var(--primary-color);
+  color: white;
+  margin-left: auto;
+}
+
+.message.bot {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1e293b;
+}
+
+.chatbot-input {
+  display: flex;
+  padding: 1rem;
+  background: white;
+  border-top: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.chatbot-input input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius);
+  margin-right: 0.5rem;
+}
+
+.chatbot-input button {
+  padding: 0.75rem 1.5rem;
+  white-space: nowrap;
+}
+
+.traditional-details {
+  background: var(--card-gradient);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--border-radius);
+}
+
+.info-item strong {
+  color: #64748b;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item span {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* Transaction Styles */
+.transactions-section {
+  margin-bottom: 2rem;
+}
+
+.transactions-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.transaction-card {
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+  padding: 1.5rem;
+  border-left: 4px solid var(--accent-color);
+}
+
+.transaction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.transaction-info h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.transaction-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.transaction-amount {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.transaction-status {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.status-approved {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.status-rejected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.transaction-details {
+  margin-bottom: 1rem;
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.detail-item strong {
+  color: #64748b;
+  margin-right: 0.5rem;
+}
+
+.category-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.transaction-receipt {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--border-radius);
+}
+
+.transaction-receipt h5 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+
+.receipt-preview {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.receipt-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  border: 2px solid rgba(226, 232, 240, 0.5);
+}
+
+.receipt-info p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.receipt-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.receipt-link:hover {
+  text-decoration: underline;
+}
+
+.transaction-hash {
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.05);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.transaction-hash strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.hash-code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.no-transactions {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-transactions h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+.no-transactions p {
+  color: #64748b;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-numbers {
+    grid-template-columns: 1fr;
+  }
+  
+  .transaction-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .receipt-preview {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+</style>
+
+<%- include('partials/footer') %>

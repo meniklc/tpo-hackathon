@@ -1,0 +1,173 @@
+<%- include('partials/header') %>
+<div class="form-container">
+  <h1>Create Budget</h1>
+  <% if(error){ %>
+  <div class="error"><%= error %></div>
+  <% } %>
+  <form method="post" id="budgetForm">
+    <input type="text" name="name" placeholder="Budget Name" required />
+    <input type="text" name="department" placeholder="Department" required />
+
+    <!-- Project Type Selection -->
+    <div class="form-group">
+      <label for="projectType">Project Type:</label>
+      <select
+        name="projectType"
+        id="projectType"
+        required
+        onchange="toggleFormFields()"
+      >
+        <option value="">Select Project Type</option>
+        <option value="government">Government</option>
+        <option value="college">College</option>
+      </select>
+    </div>
+
+    <!-- Government Form Fields -->
+    <div id="governmentFields" class="form-section" style="display: none">
+      <select name="govState" id="govState" required>
+        <option value="">Select State</option>
+        <% states.forEach(state=>{ %>
+        <option value="<%= state %>"><%= state %></option>
+        <% }) %>
+      </select>
+      <input type="text" name="govCity" id="govCity" placeholder="City" />
+      <input type="text" name="country" placeholder="Country" required />
+      <input
+        type="text"
+        name="nationality"
+        placeholder="Nationality"
+        required
+      />
+    </div>
+
+    <!-- College Form Fields -->
+    <div id="collegeFields" class="form-section" style="display: none">
+      <select name="collegeState" id="collegeState" required>
+        <option value="">Select State</option>
+        <% states.forEach(state=>{ %>
+        <option value="<%= state %>"><%= state %></option>
+        <% }) %>
+      </select>
+      <input
+        type="text"
+        name="collegeCity"
+        id="collegeCity"
+        placeholder="City"
+      />
+      <input
+        type="text"
+        name="collegeName"
+        placeholder="College Name"
+        required
+      />
+      <input
+        type="text"
+        name="collegeType"
+        placeholder="College Type (e.g., Engineering, Medical)"
+        required
+      />
+    </div>
+
+    <input
+      type="number"
+      name="totalBudget"
+      placeholder="Total Budget"
+      required
+    />
+    <input type="text" name="fiscalYear" placeholder="Fiscal Year" required />
+    <input type="text" name="approvedBy" placeholder="Approved By" required />
+    <select name="type" required>
+      <option value="Public">Public</option>
+      <option value="Private">Private</option>
+    </select>
+    <button type="submit">Create Budget</button>
+  </form>
+</div>
+
+<style>
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .form-section {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(37, 99, 235, 0.05);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+  }
+
+  .form-section input,
+  .form-section select {
+    margin-bottom: 0.75rem;
+  }
+</style>
+
+<script>
+  function toggleFormFields() {
+    const projectType = document.getElementById("projectType").value;
+    const governmentFields = document.getElementById("governmentFields");
+    const collegeFields = document.getElementById("collegeFields");
+
+    governmentFields.style.display = "none";
+    collegeFields.style.display = "none";
+
+    const allFields = governmentFields.querySelectorAll("input, select");
+    allFields.forEach((field) => field.removeAttribute("required"));
+
+    const collegeAllFields = collegeFields.querySelectorAll("input, select");
+    collegeAllFields.forEach((field) => field.removeAttribute("required"));
+
+    if (projectType === "government") {
+      governmentFields.style.display = "block";
+      allFields.forEach((field) => field.setAttribute("required", "required"));
+    } else if (projectType === "college") {
+      collegeFields.style.display = "block";
+      collegeAllFields.forEach((field) =>
+        field.setAttribute("required", "required")
+      );
+    }
+  }
+
+  function handleFormSubmit(event) {
+    const projectType = document.getElementById("projectType").value;
+
+    const stateInput = document.createElement("input");
+    stateInput.type = "hidden";
+    stateInput.name = "state";
+
+    const cityInput = document.createElement("input");
+    cityInput.type = "hidden";
+    cityInput.name = "city";
+
+    if (projectType === "government") {
+      stateInput.value = document.getElementById("govState").value;
+      cityInput.value = document.getElementById("govCity").value;
+    } else if (projectType === "college") {
+      stateInput.value = document.getElementById("collegeState").value;
+      cityInput.value = document.getElementById("collegeCity").value;
+    }
+
+    event.target.appendChild(stateInput);
+    event.target.appendChild(cityInput);
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("projectType").value = "government";
+    toggleFormFields();
+
+    document
+      .getElementById("budgetForm")
+      .addEventListener("submit", handleFormSubmit);
+  });
+</script>
+
+<%- include('partials/footer') %>

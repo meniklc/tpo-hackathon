@@ -1,0 +1,378 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="page-header">
+    <h1>🏢 <%= department %> Department Budgets</h1>
+    <p>Showing all public budgets for the <%= department %> department</p>
+  </div>
+
+  <% if(budgets && budgets.length > 0) { %>
+  <div class="budgets-grid">
+    <% budgets.forEach(budget => { %>
+    <div class="budget-card">
+      <div class="budget-header">
+        <h3><%= budget.name %></h3>
+        <span class="status-badge status-<%= budget.status %>"><%= budget.status %></span>
+      </div>
+      
+      <div class="budget-info">
+        <div class="info-item">
+          <strong>State:</strong> <%= budget.state %>
+        </div>
+        <div class="info-item">
+          <strong>City:</strong> <%= budget.city %>
+        </div>
+        <div class="info-item">
+          <strong>Total Budget:</strong> ₹<%= budget.totalBudget.toLocaleString() %>
+        </div>
+        <div class="info-item">
+          <strong>Spent:</strong> ₹<%= budget.spent.toLocaleString() %>
+        </div>
+        <div class="info-item">
+          <strong>Remaining:</strong> ₹<%= budget.remaining.toLocaleString() %>
+        </div>
+        <div class="info-item">
+          <strong>Fiscal Year:</strong> <%= budget.fiscalYear %>
+        </div>
+      </div>
+      
+      <div class="progress-section">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: <%= Math.min(100, (budget.spent / budget.totalBudget * 100)) %>%"></div>
+        </div>
+        <span class="progress-text"><%= Math.round((budget.spent / budget.totalBudget * 100)) %>% spent</span>
+      </div>
+      
+      <div class="budget-actions">
+        <a href="/budget/<%= budget._id %>" class="btn-primary">View Details</a>
+        <a href="/budget/<%= budget._id %>/visualization" class="btn-secondary">📊 Analytics & Visualization</a>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+
+  <!-- Pagination -->
+  <% if(pagination.totalPages > 1) { %>
+  <div class="pagination-container">
+    <div class="pagination">
+      <% if(pagination.hasPrev) { %>
+        <a href="/budgets/department/<%= department %>?page=<%= pagination.prevPage %>" class="pagination-btn">← Previous</a>
+      <% } %>
+      
+      <div class="pagination-numbers">
+        <% for(let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) { %>
+          <% if(i === pagination.currentPage) { %>
+            <span class="pagination-number active"><%= i %></span>
+          <% } else { %>
+            <a href="/budgets/department/<%= department %>?page=<%= i %>" class="pagination-number"><%= i %></a>
+          <% } %>
+        <% } %>
+        
+        <% if(pagination.currentPage + 2 < pagination.totalPages) { %>
+          <span class="pagination-ellipsis">...</span>
+          <a href="/budgets/department/<%= department %>?page=<%= pagination.totalPages %>" class="pagination-number"><%= pagination.totalPages %></a>
+        <% } %>
+      </div>
+      
+      <% if(pagination.hasNext) { %>
+        <a href="/budgets/department/<%= department %>?page=<%= pagination.nextPage %>" class="pagination-btn">Next →</a>
+      <% } %>
+    </div>
+    
+    <div class="pagination-info">
+      Showing <%= ((pagination.currentPage - 1) * 8) + 1 %>-<%= Math.min(pagination.currentPage * 8, pagination.totalBudgets) %> of <%= pagination.totalBudgets %> budgets
+    </div>
+  </div>
+  <% } %>
+
+  <% } else { %>
+  <div class="no-budgets">
+    <div class="empty-icon">📋</div>
+    <h3>No budgets found</h3>
+    <p>No public budgets found for the <%= department %> department.</p>
+    <a href="/" class="btn-primary">← Back to Home</a>
+  </div>
+  <% } %>
+</div>
+
+<style>
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.page-header h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.page-header p {
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+.budgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.budget-card {
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+  padding: 2rem;
+  transition: all 0.3s ease;
+  border-left: 4px solid var(--accent-color);
+}
+
+.budget-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-medium);
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.budget-header h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  flex: 1;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 1rem;
+}
+
+.status-draft {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.status-pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.status-approved {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.status-active {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.status-completed {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.budget-info {
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.info-item strong {
+  color: #64748b;
+}
+
+.progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(226, 232, 240, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-align: right;
+  display: block;
+}
+
+.budget-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary, .btn-secondary {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  text-decoration: none;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(37, 99, 235, 0.2);
+  transform: translateY(-2px);
+}
+
+.no-budgets {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-budgets h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.no-budgets p {
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+/* Pagination styles */
+.pagination-container {
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.pagination-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.pagination-number {
+  padding: 0.75rem 1rem;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 3rem;
+  text-align: center;
+}
+
+.pagination-number:hover {
+  background: rgba(37, 99, 235, 0.2);
+  transform: translateY(-2px);
+}
+
+.pagination-number.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.pagination-ellipsis {
+  padding: 0.75rem 0.5rem;
+  color: #64748b;
+}
+
+.pagination-info {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .budgets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .budget-actions {
+    flex-direction: column;
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+  }
+}
+</style>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,75 @@
+<%- include('partials/header') %>
+<div class="container">
+  <h2>Vendors - <%= project.name %></h2>
+  <p><strong>Project Budget:</strong> ₹<%= project.budget.toLocaleString() %></p>
+  
+  <div class="add-section">
+    <h3>Add New Vendor</h3>
+    <form method="post" class="form-grid">
+      <input type="text" name="name" placeholder="Vendor Name" required>
+      <input type="text" name="contactPerson" placeholder="Contact Person">
+      <input type="email" name="email" placeholder="Email">
+      <input type="tel" name="phone" placeholder="Phone">
+      <textarea name="address" placeholder="Address" rows="2"></textarea>
+      <input type="number" name="allocatedAmount" placeholder="Allocated Amount" required>
+      <button type="submit">Add Vendor</button>
+    </form>
+  </div>
+
+  <div class="cards">
+    <% vendors.forEach(vendor => { %>
+    <div class="card">
+      <h3><%= vendor.name %></h3>
+      <% if(vendor.contactPerson) { %>
+      <p><strong>Contact:</strong> <%= vendor.contactPerson %></p>
+      <% } %>
+      <% if(vendor.email) { %>
+      <p><strong>Email:</strong> <%= vendor.email %></p>
+      <% } %>
+      <% if(vendor.phone) { %>
+      <p><strong>Phone:</strong> <%= vendor.phone %></p>
+      <% } %>
+      <p><strong>Allocated Amount:</strong> ₹<%= vendor.allocatedAmount.toLocaleString() %></p>
+      <p><strong>Spent:</strong> ₹<%= vendor.spent.toLocaleString() %></p>
+      <p><strong>Remaining:</strong> ₹<%= vendor.remaining.toLocaleString() %></p>
+      <p><strong>Status:</strong> <span class="status-badge status-<%= vendor.status %>"><%= vendor.status %></span></p>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: <%= (vendor.spent / vendor.allocatedAmount * 100) %>%"></div>
+      </div>
+      <div class="card-actions">
+        <a href="/vendor/<%= vendor._id %>/transactions"><button>View Transactions</button></a>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<style>
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.form-grid textarea {
+  grid-column: span 2;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  resize: vertical;
+}
+
+.form-grid input {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+}
+
+.form-grid button {
+  grid-column: span 2;
+  padding: 0.75rem;
+}
+</style>
+
+<%- include('partials/footer') %>

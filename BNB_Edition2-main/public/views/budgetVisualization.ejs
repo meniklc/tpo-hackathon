@@ -1,0 +1,2671 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>📊 Budget Visualization & Analytics</h2>
+    <div class="header-actions">
+      <button onclick="refreshData()" class="btn-primary">
+        🔄 Refresh Data
+      </button>
+      <button onclick="exportData()" class="btn-secondary">
+        📥 Export Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Metrics Cards -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon">💰</div>
+      <div class="metric-content">
+        <h3>Total Budget</h3>
+        <p class="metric-value">₹<%= budget.totalBudget.toLocaleString() %></p>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">📈</div>
+      <div class="metric-content">
+        <h3>Spent</h3>
+        <p class="metric-value">₹<%= budget.spent.toLocaleString() %></p>
+        <p class="metric-percentage">
+          <%= ((budget.spent / budget.totalBudget) * 100).toFixed(1) %>%
+        </p>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">📉</div>
+      <div class="metric-content">
+        <h3>Remaining</h3>
+        <p class="metric-value">₹<%= budget.remaining.toLocaleString() %></p>
+        <p class="metric-percentage">
+          <%= ((budget.remaining / budget.totalBudget) * 100).toFixed(1) %>%
+        </p>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">⚠️</div>
+      <div class="metric-content">
+        <h3>Anomalies</h3>
+        <p class="metric-value" id="anomalyCount">-</p>
+        <p class="metric-subtitle">Active Alerts</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="chatbot-section">
+    <h3>💬 Ask Questions About This Budget</h3>
+    <div class="chatbot-container">
+      <div class="chatbot-toggle">
+        <button
+          id="chatbotToggle"
+          class="chatbot-btn"
+          onclick="toggleChatbot()"
+        >
+          <span class="chatbot-icon">🤖</span>
+          <span class="chatbot-text">Ask AI Assistant</span>
+        </button>
+      </div>
+      <div id="chatbotWindow" class="chatbot-window" style="display: none">
+        <div class="chatbot-header">
+          <h4>🤖 Budget AI Assistant</h4>
+          <button onclick="toggleChatbot()" class="chatbot-close">
+            &times;
+          </button>
+        </div>
+        <div id="chatbotMessages" class="chatbot-messages">
+          <div class="chatbot-message bot-message">
+            <div class="message-content">
+              <p>
+                Hello! I'm your Budget AI Assistant. I can help you understand
+                this budget, analyze spending patterns, answer questions about
+                transactions, and provide insights. What would you like to know?
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="chatbot-input">
+          <input
+            type="text"
+            id="chatbotInput"
+            placeholder="Ask me anything about this budget..."
+            onkeypress="handleChatbotKeyPress(event)"
+          />
+          <button onclick="sendChatbotMessage()" class="chatbot-send">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-section">
+    <div class="chart-container">
+      <h3>💰 Budget Overview</h3>
+      <div class="chart-loading" id="overviewChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="overviewChart" style="display: none"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>📊 Transaction Categories</h3>
+      <div class="chart-loading" id="categoryChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="categoryChart" style="display: none"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>📈 Spending Timeline</h3>
+      <div class="chart-loading" id="timelineChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="timelineChart" style="display: none"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>🎯 Budget Utilization</h3>
+      <div class="chart-loading" id="utilizationChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="utilizationChart" style="display: none"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>🏢 Department Budget Usage</h3>
+      <div class="chart-loading" id="departmentUsageChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="departmentUsageChart" style="display: none"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>📊 Department Comparison</h3>
+      <div class="chart-loading" id="departmentComparisonChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="departmentComparisonChart" style="display: none"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h3>📈 Department Utilization</h3>
+      <div class="chart-loading" id="departmentUtilizationChartLoading">
+        Loading chart...
+      </div>
+      <canvas id="departmentUtilizationChart" style="display: none"></canvas>
+    </div>
+  </div>
+
+  <!-- Anomaly Detection Section -->
+  <div class="anomaly-section">
+    <h3>🚨 Anomaly Detection</h3>
+    <div id="anomalyList" class="anomaly-list">
+      <!-- Anomalies will be loaded here -->
+    </div>
+  </div>
+
+  <!-- Community Feedback Section -->
+  <div class="feedback-section">
+    <h3>💬 Community Feedback</h3>
+    <div class="feedback-form">
+      <textarea
+        id="feedbackMessage"
+        placeholder="Share your thoughts, suggestions, or concerns about this budget..."
+      ></textarea>
+      <div class="feedback-actions">
+        <select id="feedbackType">
+          <option value="suggestion">Suggestion</option>
+          <option value="complaint">Complaint</option>
+          <option value="question">Question</option>
+          <option value="praise">Praise</option>
+          <option value="concern">Concern</option>
+        </select>
+        <button onclick="submitFeedback()" class="btn-primary">
+          Submit Feedback
+        </button>
+      </div>
+    </div>
+    <div id="feedbackList" class="feedback-list">
+      <!-- Feedback will be loaded here -->
+    </div>
+  </div>
+
+  <!-- AI-Powered Analysis Section -->
+  <div class="ai-section">
+    <h3>🤖 AI-Powered Analysis</h3>
+
+    <!-- AI Summary -->
+    <div class="ai-summary-card">
+      <h4>📊 Budget Summary</h4>
+      <div id="aiSummary" class="ai-content">
+        <div class="loading">Generating AI summary...</div>
+      </div>
+    </div>
+
+    <!-- AI FAQ -->
+    <div class="ai-faq-card">
+      <h4>❓ Frequently Asked Questions</h4>
+      <div id="aiFAQ" class="ai-content">
+        <div class="loading">Generating FAQ...</div>
+      </div>
+    </div>
+
+    <!-- Fund Flow Visualization -->
+    <div class="ai-sankey-card">
+      <h4>🌊 Fund Flow Visualization</h4>
+      <div id="sankeyContainer" class="sankey-container">
+        <svg id="sankeyDiagram"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Hierarchy Section -->
+  <div class="hierarchy-section">
+    <h3>🏗️ Project Hierarchy</h3>
+    <div class="hierarchy-controls">
+      <button onclick="addDepartment()" class="btn-primary">
+        ➕ Add Department
+      </button>
+    </div>
+    <div id="hierarchyTree" class="hierarchy-tree">
+      <!-- Project hierarchy will be displayed here -->
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js - Local copy (no internet required) -->
+<script src="/js/vendor/chart.js"></script>
+<!-- D3.js for Sankey diagram -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<!-- Budget Data -->
+<script type="application/json" id="budget-data">
+{
+  "spent": <%= budget.spent || 1500000 %>,
+  "remaining": <%= budget.remaining || 500000 %>,
+  "totalBudget": <%= budget.totalBudget || 2000000 %>,
+  "name": "<%= budget.name || 'Rural Development Project' %>",
+  "department": "<%= budget.department || 'Rural Development' %>",
+  "status": "<%= budget.status || 'Active' %>",
+  "fiscalYear": "<%= budget.fiscalYear || '2024-2025' %>",
+  "type": "<%= budget.type || 'Public' %>",
+  "approvedBy": "<%= budget.approvedBy || 'Ministry of Rural Development' %>"
+}
+</script>
+<script>
+  // Get budget data from JSON script tag with comprehensive fallbacks
+  const budgetDataScript = document.getElementById('budget-data');
+  window.budgetData = budgetDataScript ? JSON.parse(budgetDataScript.textContent) : {
+    spent: 1500000,
+    remaining: 500000,
+    totalBudget: 2000000,
+    name: 'Rural Development Project',
+    department: 'Rural Development',
+    status: 'Active',
+    fiscalYear: '2024-2025',
+    type: 'Public',
+    approvedBy: 'Ministry of Rural Development'
+  };
+  
+  console.log("Budget data loaded:", window.budgetData);
+  
+  // Initialize pure HTML/CSS charts immediately
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM Content Loaded - Creating pure HTML/CSS charts...");
+    createPureHTMLCharts();
+    loadAnomalies();
+    loadFeedback();
+    loadHierarchy();
+    loadAIData();
+  });
+</script>
+
+<style>
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .metric-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #ef4444);
+  }
+
+  .metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .metric-icon {
+    font-size: 3rem;
+    opacity: 0.9;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+
+  .metric-content {
+    flex: 1;
+  }
+
+  .metric-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .metric-value {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+  }
+
+  .metric-percentage {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.9rem;
+    color: #10b981;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .metric-percentage::before {
+    content: '📈';
+    font-size: 0.8rem;
+  }
+
+  .metric-subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .charts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .chart-container {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+  }
+
+  .chart-container:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .chart-container h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1e293b;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .chart-container canvas {
+    max-height: 350px;
+    min-height: 300px;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .chart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: #64748b;
+    font-style: italic;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 8px;
+    border: 2px dashed #cbd5e1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chart-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  .anomaly-section,
+  .feedback-section,
+  .hierarchy-section,
+  .ai-section,
+  .chatbot-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-light);
+    margin-bottom: 2rem;
+  }
+
+  .ai-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .ai-section h3 {
+    color: white;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1.5rem;
+  }
+
+  .ai-summary-card,
+  .ai-faq-card,
+  .ai-sankey-card {
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    padding: 1.5rem;
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .ai-summary-card h4,
+  .ai-faq-card h4,
+  .ai-sankey-card h4 {
+    color: #1e293b;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .ai-content {
+    min-height: 100px;
+  }
+
+  .loading {
+    text-align: center;
+    color: #64748b;
+    font-style: italic;
+    padding: 2rem;
+  }
+
+  .sankey-container {
+    width: 100%;
+    height: 400px;
+    overflow-x: auto;
+  }
+
+  .sankey-container svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .faq-item {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+    border-left: 4px solid #3b82f6;
+  }
+
+  .faq-item h5 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+    font-weight: 600;
+  }
+
+  .faq-item p {
+    margin: 0;
+    color: #64748b;
+  }
+
+  .summary-content h5 {
+    color: #1e293b;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .summary-bullets {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .summary-bullets li {
+    margin-bottom: 0.5rem;
+    color: #64748b;
+  }
+
+  .summary-numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .number-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+  }
+
+  .number-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+  }
+
+  .number-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .anomaly-list,
+  .feedback-list {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .anomaly-item,
+  .feedback-item {
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    background: #f8f9fa;
+  }
+
+  .anomaly-item.critical {
+    border-left: 4px solid #dc2626;
+    background: #fef2f2;
+  }
+
+  .anomaly-item.high {
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+  }
+
+  .anomaly-item.medium {
+    border-left: 4px solid #3b82f6;
+    background: #eff6ff;
+  }
+
+  .feedback-form {
+    margin-bottom: 2rem;
+  }
+
+  .feedback-form textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .feedback-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .feedback-actions select {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+  }
+
+  .hierarchy-tree {
+    margin-top: 1rem;
+  }
+
+  .hierarchy-node {
+    margin: 0.5rem 0;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    background: #f8f9fa;
+  }
+
+  .hierarchy-node.department {
+    border-left: 4px solid var(--primary-color);
+  }
+
+  .hierarchy-node.vendor {
+    border-left: 4px solid var(--success-color);
+    margin-left: 2rem;
+  }
+
+  .dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  }
+
+  .dashboard-header h2 {
+    margin: 0 0 1rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .header-actions button {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .header-actions button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  /* Chatbot Styles */
+  .chatbot-container {
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .chatbot-toggle {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .chatbot-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 auto;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    animation: pulse 2s infinite;
+  }
+
+  .chatbot-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  }
+
+  .chatbot-btn:active {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  .chatbot-icon {
+    font-size: 1.5rem;
+    animation: bounce 1s infinite;
+  }
+
+  @keyframes bounce {
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px);
+    }
+    60% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .chatbot-window {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  .chatbot-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chatbot-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .chatbot-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+  }
+
+  .chatbot-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .chatbot-messages {
+    height: 300px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: #f8f9fa;
+  }
+
+  .chatbot-message {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .bot-message {
+    justify-content: flex-start;
+  }
+
+  .user-message {
+    justify-content: flex-end;
+  }
+
+  .message-content {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .bot-message .message-content {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 15px 15px 15px 5px;
+  }
+
+  .user-message .message-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 5px 15px;
+  }
+
+  .chatbot-input {
+    display: flex;
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .chatbot-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 25px;
+    outline: none;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+  }
+
+  .chatbot-input input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .chatbot-send {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .chatbot-send:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .chatbot-send:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  @media (max-width: 768px) {
+    .charts-section {
+      grid-template-columns: 1fr;
+    }
+
+    .metrics-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .feedback-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+</style>
+
+<script>
+  let charts = {};
+
+  // Get budget data with fallbacks
+  const budgetSpent = window.budgetData?.spent || 1500000;
+  const budgetRemaining = window.budgetData?.remaining || 500000;
+  const budgetTotal = window.budgetData?.totalBudget || 2000000;
+
+  console.log("Budget Data:", { budgetSpent, budgetRemaining, budgetTotal });
+
+  // Function to generate comprehensive dummy data
+  function generateComprehensiveDummyData() {
+    const currentYear = new Date().getFullYear();
+    const fiscalYear = `${currentYear}-${currentYear + 1}`;
+    
+    return {
+      departments: [
+        { name: "Rural Development", allocated: 400000, spent: 280000, utilization: 70 },
+        { name: "Infrastructure", allocated: 350000, spent: 220000, utilization: 63 },
+        { name: "Education", allocated: 300000, spent: 190000, utilization: 63 },
+        { name: "Healthcare", allocated: 250000, spent: 180000, utilization: 72 },
+        { name: "Agriculture", allocated: 200000, spent: 150000, utilization: 75 },
+        { name: "Transportation", allocated: 180000, spent: 120000, utilization: 67 },
+        { name: "Water Resources", allocated: 150000, spent: 95000, utilization: 63 },
+        { name: "Energy", allocated: 120000, spent: 80000, utilization: 67 }
+      ],
+      categories: [
+        { name: "Infrastructure Development", amount: budgetSpent * 0.35 },
+        { name: "Equipment & Supplies", amount: budgetSpent * 0.25 },
+        { name: "Personnel Costs", amount: budgetSpent * 0.20 },
+        { name: "Training & Development", amount: budgetSpent * 0.10 },
+        { name: "Administrative", amount: budgetSpent * 0.10 }
+      ],
+      timeline: [
+        { month: "Apr", amount: budgetSpent * 0.08 },
+        { month: "May", amount: budgetSpent * 0.12 },
+        { month: "Jun", amount: budgetSpent * 0.15 },
+        { month: "Jul", amount: budgetSpent * 0.18 },
+        { month: "Aug", amount: budgetSpent * 0.20 },
+        { month: "Sep", amount: budgetSpent * 0.15 },
+        { month: "Oct", amount: budgetSpent * 0.12 }
+      ],
+      fiscalYear: fiscalYear
+    };
+  }
+
+  // Create pure HTML/CSS charts
+  function createPureHTMLCharts() {
+    console.log("Creating pure HTML/CSS charts...");
+    
+    const dummyData = generateComprehensiveDummyData();
+    
+    // Hide all loading indicators
+    document.querySelectorAll(".chart-loading").forEach((loading) => {
+      loading.style.display = "none";
+    });
+
+    // Hide all canvas elements
+    document.querySelectorAll(".chart-container canvas").forEach((canvas) => {
+      canvas.style.display = "none";
+    });
+
+    // Create charts for each container
+    const chartContainers = document.querySelectorAll('.chart-container');
+    
+    chartContainers.forEach((container, index) => {
+      const title = container.querySelector('h3').textContent;
+      let chartHTML = '';
+      
+      switch(index) {
+        case 0: // Budget Overview - Pie Chart
+          chartHTML = createHTMLPieChart([
+            { label: 'Spent', value: budgetSpent, color: '#ef4444', percentage: ((budgetSpent / budgetTotal) * 100).toFixed(1) },
+            { label: 'Remaining', value: budgetRemaining, color: '#10b981', percentage: ((budgetRemaining / budgetTotal) * 100).toFixed(1) }
+          ]);
+          break;
+        case 1: // Transaction Categories - Bar Chart
+          chartHTML = createHTMLBarChart(dummyData.categories);
+          break;
+        case 2: // Spending Timeline - Line Chart
+          chartHTML = createHTMLLineChart(dummyData.timeline);
+          break;
+        case 3: // Budget Utilization - Pie Chart
+          const utilization = Math.round((budgetSpent / budgetTotal) * 100);
+          chartHTML = createHTMLPieChart([
+            { label: 'Utilized', value: utilization, color: utilization > 80 ? '#ef4444' : utilization > 60 ? '#f59e0b' : '#10b981', percentage: utilization },
+            { label: 'Remaining', value: 100 - utilization, color: '#e5e7eb', percentage: 100 - utilization }
+          ]);
+          break;
+        case 4: // Department Budget Usage - Bar Chart
+          chartHTML = createHTMLBarChart(dummyData.departments.map(dept => ({
+            name: dept.name,
+            amount: dept.allocated,
+            color: '#3b82f6'
+          })));
+          break;
+        case 5: // Department Comparison - Pie Chart
+          chartHTML = createHTMLPieChart(dummyData.departments.map(dept => ({
+            label: dept.name,
+            value: dept.spent,
+            color: '#3b82f6',
+            percentage: ((dept.spent / budgetSpent) * 100).toFixed(1)
+          })));
+          break;
+        case 6: // Department Utilization - Horizontal Bar Chart
+          chartHTML = createHTMLHorizontalBarChart(dummyData.departments.map(dept => ({
+            name: dept.name,
+            amount: dept.utilization,
+            color: dept.utilization > 80 ? '#ef4444' : dept.utilization > 60 ? '#f59e0b' : '#10b981'
+          })));
+          break;
+        default:
+          chartHTML = '<div style="text-align: center; padding: 2rem; color: #64748b;">Chart data not available</div>';
+      }
+      
+      container.innerHTML = `<h3>${title}</h3>${chartHTML}`;
+    });
+    
+    console.log("Pure HTML/CSS charts created successfully!");
+  }
+
+  // HTML/CSS Chart Creation Functions
+  function createHTMLPieChart(data) {
+    const total = data.reduce((sum, item) => sum + item.value, 0);
+    let html = '<div style="display: flex; flex-wrap: wrap; gap: 1.5rem; padding: 1.5rem; justify-content: center;">';
+    
+    data.forEach(item => {
+      const percentage = item.percentage || ((item.value / total) * 100).toFixed(1);
+      html += `
+        <div style="flex: 1; min-width: 120px; text-align: center; padding: 1rem;">
+          <div style="width: 80px; height: 80px; border-radius: 50%; background: ${item.color}; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            ${percentage}%
+          </div>
+          <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 0.5rem;">${item.label}</div>
+          <div style="color: #64748b; font-size: 0.9rem;">₹${item.value.toLocaleString()}</div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    return html;
+  }
+
+  function createHTMLBarChart(data) {
+    const maxValue = Math.max(...data.map(item => item.amount));
+    let html = '<div style="padding: 1.5rem;">';
+    
+    data.forEach(item => {
+      const percentage = ((item.amount / maxValue) * 100).toFixed(1);
+      html += `
+        <div style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: bold; font-size: 1rem;">${item.name}</span>
+            <span style="color: #64748b; font-weight: 600;">₹${item.amount.toLocaleString()}</span>
+          </div>
+          <div style="width: 100%; height: 25px; background: #e5e7eb; border-radius: 12px; overflow: hidden; position: relative;">
+            <div style="width: ${percentage}%; height: 100%; background: ${item.color}; transition: width 0.8s ease; border-radius: 12px; position: relative;">
+              <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: white; font-weight: bold; font-size: 0.8rem;">${percentage}%</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    return html;
+  }
+
+  function createHTMLHorizontalBarChart(data) {
+    let html = '<div style="padding: 1.5rem;">';
+    
+    data.forEach(item => {
+      html += `
+        <div style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: bold; font-size: 1rem;">${item.name}</span>
+            <span style="color: #64748b; font-weight: 600;">${item.amount}%</span>
+          </div>
+          <div style="width: 100%; height: 25px; background: #e5e7eb; border-radius: 12px; overflow: hidden; position: relative;">
+            <div style="width: ${item.amount}%; height: 100%; background: ${item.color}; transition: width 0.8s ease; border-radius: 12px; position: relative;">
+              <div style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: white; font-weight: bold; font-size: 0.8rem;">${item.amount}%</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    html += '</div>';
+    return html;
+  }
+
+  function createHTMLLineChart(data) {
+    const maxValue = Math.max(...data.map(item => item.amount));
+    let html = '<div style="padding: 1.5rem; position: relative;">';
+    
+    // Create SVG for line chart
+    html += '<svg width="100%" height="250" style="border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa;">';
+    
+    // Add grid lines
+    for (let i = 0; i <= 4; i++) {
+      const y = (i / 4) * 100;
+      html += `<line x1="0" y1="${y}%" x2="100%" y2="${y}%" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2" />`;
+    }
+    
+    // Create line path
+    let pathData = '';
+    data.forEach((item, index) => {
+      const x = (index / (data.length - 1)) * 100;
+      const y = 100 - ((item.amount / maxValue) * 100);
+      
+      if (index === 0) {
+        pathData = `M ${x}% ${y}%`;
+      } else {
+        pathData += ` L ${x}% ${y}%`;
+      }
+    });
+    
+    html += `<path d="${pathData}" stroke="#3b82f6" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round" />`;
+    
+    // Add data points and labels
+    data.forEach((item, index) => {
+      const x = (index / (data.length - 1)) * 100;
+      const y = 100 - ((item.amount / maxValue) * 100);
+      
+      html += `<circle cx="${x}%" cy="${y}%" r="6" fill="#3b82f6" stroke="white" stroke-width="2" />`;
+      html += `<text x="${x}%" y="95%" text-anchor="middle" style="font-size: 12px; fill: #64748b; font-weight: 500;">${item.month}</text>`;
+      html += `<text x="${x}%" y="${y - 10}%" text-anchor="middle" style="font-size: 11px; fill: #3b82f6; font-weight: bold;">₹${item.amount.toLocaleString()}</text>`;
+    });
+    
+    html += '</svg>';
+    html += '</div>';
+    return html;
+  }
+
+  // Load other data functions
+  async function loadAnomalies() {
+    try {
+      let transactions = [];
+      try {
+        const response = await fetch(
+          `/api/budget/<%= budget._id %>/transactions`
+        );
+        const data = await response.json();
+        transactions = data.transactions || [];
+      } catch (error) {
+        console.warn("Failed to fetch transactions:", error);
+      }
+
+      // Initialize Overview Chart (Budget vs Spent) - Pie Chart
+      const overviewCtx = document
+        .getElementById("overviewChart")
+        .getContext("2d");
+      const overviewData = {
+        labels: ["Spent", "Remaining"],
+        datasets: [
+          {
+            data: [budgetSpent, budgetRemaining],
+            backgroundColor: ["#ef4444", "#10b981"],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          },
+        ],
+      };
+
+      charts.overview = new Chart(overviewCtx, {
+        type: "pie",
+        data: overviewData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: "bottom",
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ₹${value.toLocaleString()} (${percentage}%)`;
+                }
+              }
+            }
+          },
+        },
+      });
+
+      document.getElementById("overviewChartLoading").style.display = "none";
+      document.getElementById("overviewChart").style.display = "block";
+
+      // Initialize Category Chart
+      const categoryCtx = document
+        .getElementById("categoryChart")
+        .getContext("2d");
+
+      const categoryData = {};
+      transactions.forEach((tx) => {
+        const category = tx.category || "General";
+        categoryData[category] = (categoryData[category] || 0) + tx.amount;
+      });
+
+      const categoryLabels = Object.keys(categoryData);
+      const categoryAmounts = Object.values(categoryData);
+
+      // If no transactions, show a default chart
+      const finalCategoryLabels = categoryLabels.length > 0 ? categoryLabels : ["General", "Office Supplies", "Travel", "Equipment"];
+      const finalCategoryAmounts = categoryAmounts.length > 0 ? categoryAmounts : [
+        budgetSpent * 0.4, 
+        budgetSpent * 0.3, 
+        budgetSpent * 0.2, 
+        budgetSpent * 0.1
+      ];
+
+      const categoryChartData = {
+        labels: finalCategoryLabels,
+        datasets: [
+          {
+            label: "Amount (₹)",
+            data: finalCategoryAmounts,
+            backgroundColor: [
+              "#3b82f6",
+              "#10b981",
+              "#f59e0b",
+              "#ef4444",
+              "#8b5cf6",
+              "#06b6d4",
+              "#f97316",
+              "#84cc16"
+            ],
+            borderWidth: 1,
+            borderColor: "#ffffff",
+          },
+        ],
+      };
+
+      charts.category = new Chart(categoryCtx, {
+        type: "bar",
+        data: categoryChartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return "₹" + value.toLocaleString();
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.label}: ₹${context.parsed.y.toLocaleString()}`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      document.getElementById("categoryChartLoading").style.display = "none";
+      document.getElementById("categoryChart").style.display = "block";
+
+      // Initialize Timeline Chart
+      const timelineCtx = document
+        .getElementById("timelineChart")
+        .getContext("2d");
+
+      const monthlyData = {};
+      transactions.forEach((tx) => {
+        const month = new Date(tx.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        });
+        monthlyData[month] = (monthlyData[month] || 0) + tx.amount;
+      });
+
+      const timelineLabels = Object.keys(monthlyData).sort();
+      const timelineAmounts = timelineLabels.map((month) => monthlyData[month]);
+
+      // If no transactions, create sample timeline data
+      const finalTimelineLabels = timelineLabels.length > 0 ? timelineLabels : 
+        ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+      const finalTimelineAmounts = timelineAmounts.length > 0 ? timelineAmounts : 
+        [budgetSpent * 0.1, budgetSpent * 0.15, budgetSpent * 0.2, budgetSpent * 0.25, budgetSpent * 0.2, budgetSpent * 0.1];
+
+      const timelineChartData = {
+        labels: finalTimelineLabels,
+        datasets: [
+          {
+            label: "Monthly Spending",
+            data: finalTimelineAmounts,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59, 130, 246, 0.1)",
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: "#3b82f6",
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
+            pointRadius: 6,
+          },
+        ],
+      };
+
+      charts.timeline = new Chart(timelineCtx, {
+        type: "line",
+        data: timelineChartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return "₹" + value.toLocaleString();
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.dataset.label}: ₹${context.parsed.y.toLocaleString()}`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      document.getElementById("timelineChartLoading").style.display = "none";
+      document.getElementById("timelineChart").style.display = "block";
+
+      // Initialize Utilization Chart
+      const utilizationCtx = document
+        .getElementById("utilizationChart")
+        .getContext("2d");
+
+      const utilizationPercentage = Math.round(
+        (budgetSpent / budgetTotal) * 100
+      );
+      const remainingPercentage = 100 - utilizationPercentage;
+
+      const utilizationData = {
+        labels: ["Utilized", "Remaining"],
+        datasets: [
+          {
+            data: [utilizationPercentage, remainingPercentage],
+            backgroundColor: [
+              utilizationPercentage > 80
+                ? "#ef4444"
+                : utilizationPercentage > 60
+                ? "#f59e0b"
+                : "#10b981",
+              "#e5e7eb",
+            ],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          },
+        ],
+      };
+
+      charts.utilization = new Chart(utilizationCtx, {
+        type: "doughnut",
+        data: utilizationData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "70%",
+          plugins: {
+            legend: { 
+              position: "bottom",
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ${percentage}%`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      document.getElementById("utilizationChartLoading").style.display = "none";
+      document.getElementById("utilizationChart").style.display = "block";
+
+      // Initialize Department Budget Usage Chart
+      const departmentUsageCtx = document
+        .getElementById("departmentUsageChart")
+        .getContext("2d");
+
+      // Fetch department data from API or use fallback
+      let departmentData;
+      try {
+        const deptResponse = await fetch(`/api/budget/<%= budget._id %>/departments`);
+        if (deptResponse.ok) {
+          const deptApiData = await deptResponse.json();
+          departmentData = deptApiData.departments;
+        } else {
+          departmentData = generateDepartmentData(budgetTotal, budgetSpent);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch department data, using fallback:", error);
+        departmentData = generateDepartmentData(budgetTotal, budgetSpent);
+      }
+      
+      const departmentUsageData = {
+        labels: departmentData.map(dept => dept.name),
+        datasets: [
+          {
+            label: "Budget Allocated (₹)",
+            data: departmentData.map(dept => dept.allocated),
+            backgroundColor: "rgba(59, 130, 246, 0.6)",
+            borderColor: "#3b82f6",
+            borderWidth: 2,
+          },
+          {
+            label: "Amount Spent (₹)",
+            data: departmentData.map(dept => dept.spent),
+            backgroundColor: "rgba(239, 68, 68, 0.6)",
+            borderColor: "#ef4444",
+            borderWidth: 2,
+          }
+        ],
+      };
+
+      charts.departmentUsage = new Chart(departmentUsageCtx, {
+        type: "bar",
+        data: departmentUsageData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return "₹" + value.toLocaleString();
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              position: "top",
+              labels: {
+                usePointStyle: true,
+                padding: 20
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.dataset.label}: ₹${context.parsed.y.toLocaleString()}`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      document.getElementById("departmentUsageChartLoading").style.display = "none";
+      document.getElementById("departmentUsageChart").style.display = "block";
+
+      // Initialize Department Comparison Chart (Pie Chart)
+      const departmentComparisonCtx = document
+        .getElementById("departmentComparisonChart")
+        .getContext("2d");
+
+      const departmentComparisonData = {
+        labels: departmentData.map(dept => dept.name),
+        datasets: [
+          {
+            data: departmentData.map(dept => dept.spent),
+            backgroundColor: [
+              "#3b82f6",
+              "#10b981", 
+              "#f59e0b",
+              "#ef4444",
+              "#8b5cf6",
+              "#06b6d4",
+              "#f97316",
+              "#84cc16"
+            ],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          },
+        ],
+      };
+
+      charts.departmentComparison = new Chart(departmentComparisonCtx, {
+        type: "pie",
+        data: departmentComparisonData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ₹${value.toLocaleString()} (${percentage}%)`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      document.getElementById("departmentComparisonChartLoading").style.display = "none";
+      document.getElementById("departmentComparisonChart").style.display = "block";
+
+      // Initialize Department Utilization Chart (Horizontal Bar)
+      const departmentUtilizationCtx = document
+        .getElementById("departmentUtilizationChart")
+        .getContext("2d");
+
+      const departmentUtilizationData = {
+        labels: departmentData.map(dept => dept.name),
+        datasets: [
+          {
+            label: "Budget Utilization (%)",
+            data: departmentData.map(dept => parseFloat(dept.utilization)),
+            backgroundColor: departmentData.map(dept => {
+              const utilization = parseFloat(dept.utilization);
+              if (utilization > 80) return "#ef4444"; // Red for high utilization
+              if (utilization > 60) return "#f59e0b"; // Orange for medium utilization
+              return "#10b981"; // Green for low utilization
+            }),
+            borderWidth: 1,
+            borderColor: "#ffffff",
+          }
+        ],
+      };
+
+      charts.departmentUtilization = new Chart(departmentUtilizationCtx, {
+        type: "bar",
+        data: departmentUtilizationData,
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function (value) {
+                  return value + "%";
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.label}: ${context.parsed.x.toFixed(1)}%`;
+                },
+              },
+            },
+          },
+        },
+      });
+
+      document.getElementById("departmentUtilizationChartLoading").style.display = "none";
+      document.getElementById("departmentUtilizationChart").style.display = "block";
+      
+      console.log("All charts initialized successfully!");
+    } catch (error) {
+      console.error("Error initializing charts:", error);
+      // Initialize fallback charts with dummy data
+      initializeFallbackCharts();
+    }
+  }
+
+  // Function to generate sample department data
+  function generateDepartmentData(totalBudget, totalSpent) {
+    const departments = [
+      "IT Department",
+      "HR Department", 
+      "Finance Department",
+      "Operations",
+      "Marketing",
+      "Research & Development",
+      "Administration",
+      "Customer Service"
+    ];
+
+    const departmentData = [];
+    let remainingBudget = totalBudget;
+    let remainingSpent = totalSpent;
+
+    for (let i = 0; i < departments.length; i++) {
+      const dept = departments[i];
+      
+      // Allocate budget (decreasing amounts)
+      const allocated = i === departments.length - 1 ? remainingBudget : 
+        Math.floor(remainingBudget * (0.2 + Math.random() * 0.3));
+      
+      // Calculate spent amount
+      const spent = i === departments.length - 1 ? remainingSpent :
+        Math.floor(remainingSpent * (0.1 + Math.random() * 0.4));
+      
+      departmentData.push({
+        name: dept,
+        allocated: allocated,
+        spent: spent,
+        remaining: allocated - spent
+      });
+
+      remainingBudget -= allocated;
+      remainingSpent -= spent;
+    }
+
+    return departmentData;
+  }
+
+  function initializeFallbackCharts() {
+    console.log("Initializing fallback charts with dummy data...");
+    
+    // Hide all loading indicators
+    document.querySelectorAll(".chart-loading").forEach((loading) => {
+      loading.style.display = "none";
+    });
+
+    // Show all canvas elements
+    document.querySelectorAll(".chart-container canvas").forEach((canvas) => {
+      canvas.style.display = "block";
+    });
+
+    // Generate dummy data for charts
+    const dummyCategories = ["Office Supplies", "Travel", "Equipment", "Software", "Training"];
+    const dummyCategoryAmounts = [budgetSpent * 0.3, budgetSpent * 0.25, budgetSpent * 0.2, budgetSpent * 0.15, budgetSpent * 0.1];
+    
+    const dummyTimelineLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+    const dummyTimelineAmounts = [budgetSpent * 0.1, budgetSpent * 0.15, budgetSpent * 0.2, budgetSpent * 0.25, budgetSpent * 0.2, budgetSpent * 0.1];
+
+    // 1. Overview Chart (Pie Chart)
+    try {
+      const overviewCtx = document.getElementById("overviewChart").getContext("2d");
+      charts.overview = new Chart(overviewCtx, {
+        type: "pie",
+        data: {
+          labels: ["Spent", "Remaining"],
+          datasets: [{
+            data: [budgetSpent, budgetRemaining],
+            backgroundColor: ["#ef4444", "#10b981"],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: "bottom",
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ₹${value.toLocaleString()} (${percentage}%)`;
+                }
+              }
+            }
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating overview chart:", error);
+    }
+
+    // 2. Category Chart (Bar Chart)
+    try {
+      const categoryCtx = document.getElementById("categoryChart").getContext("2d");
+      charts.category = new Chart(categoryCtx, {
+        type: "bar",
+        data: {
+          labels: dummyCategories,
+          datasets: [{
+            label: "Amount (₹)",
+            data: dummyCategoryAmounts,
+            backgroundColor: ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"],
+            borderWidth: 1,
+            borderColor: "#ffffff",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return "₹" + value.toLocaleString();
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.label}: ₹${context.parsed.y.toLocaleString()}`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating category chart:", error);
+    }
+
+    // 3. Timeline Chart (Line Chart)
+    try {
+      const timelineCtx = document.getElementById("timelineChart").getContext("2d");
+      charts.timeline = new Chart(timelineCtx, {
+        type: "line",
+        data: {
+          labels: dummyTimelineLabels,
+          datasets: [{
+            label: "Monthly Spending",
+            data: dummyTimelineAmounts,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59, 130, 246, 0.1)",
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: "#3b82f6",
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
+            pointRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return "₹" + value.toLocaleString();
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.dataset.label}: ₹${context.parsed.y.toLocaleString()}`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating timeline chart:", error);
+    }
+
+    // 4. Utilization Chart (Pie Chart)
+    try {
+      const utilizationCtx = document.getElementById("utilizationChart").getContext("2d");
+      const utilizationPercentage = Math.round((budgetSpent / budgetTotal) * 100);
+      const remainingPercentage = 100 - utilizationPercentage;
+
+      charts.utilization = new Chart(utilizationCtx, {
+        type: "pie",
+        data: {
+          labels: ["Utilized", "Remaining"],
+          datasets: [{
+            data: [utilizationPercentage, remainingPercentage],
+            backgroundColor: [
+              utilizationPercentage > 80 ? "#ef4444" : utilizationPercentage > 60 ? "#f59e0b" : "#10b981",
+              "#e5e7eb",
+            ],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { 
+              position: "bottom",
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ${percentage}%`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating utilization chart:", error);
+    }
+
+    // 5. Department Usage Chart (Bar Chart)
+    try {
+      const departmentUsageCtx = document.getElementById("departmentUsageChart").getContext("2d");
+      const departmentData = generateDepartmentData(budgetTotal, budgetSpent);
+      
+      charts.departmentUsage = new Chart(departmentUsageCtx, {
+        type: "bar",
+        data: {
+          labels: departmentData.map(dept => dept.name),
+          datasets: [
+            {
+              label: "Budget Allocated (₹)",
+              data: departmentData.map(dept => dept.allocated),
+              backgroundColor: "rgba(59, 130, 246, 0.6)",
+              borderColor: "#3b82f6",
+              borderWidth: 2,
+            },
+            {
+              label: "Amount Spent (₹)",
+              data: departmentData.map(dept => dept.spent),
+              backgroundColor: "rgba(239, 68, 68, 0.6)",
+              borderColor: "#ef4444",
+              borderWidth: 2,
+            }
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value) {
+                  return "₹" + value.toLocaleString();
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              position: "top",
+              labels: {
+                usePointStyle: true,
+                padding: 20
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.dataset.label}: ₹${context.parsed.y.toLocaleString()}`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating department usage chart:", error);
+    }
+
+    // 6. Department Comparison Chart (Pie Chart)
+    try {
+      const departmentComparisonCtx = document.getElementById("departmentComparisonChart").getContext("2d");
+      const departmentData = generateDepartmentData(budgetTotal, budgetSpent);
+      
+      charts.departmentComparison = new Chart(departmentComparisonCtx, {
+        type: "pie",
+        data: {
+          labels: departmentData.map(dept => dept.name),
+          datasets: [{
+            data: departmentData.map(dept => dept.spent),
+            backgroundColor: [
+              "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#84cc16"
+            ],
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                padding: 20,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  const value = context.parsed;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${context.label}: ₹${value.toLocaleString()} (${percentage}%)`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating department comparison chart:", error);
+    }
+
+    // 7. Department Utilization Chart (Horizontal Bar)
+    try {
+      const departmentUtilizationCtx = document.getElementById("departmentUtilizationChart").getContext("2d");
+      const departmentData = generateDepartmentData(budgetTotal, budgetSpent);
+      
+      // Add utilization percentage to department data
+      departmentData.forEach(dept => {
+        dept.utilization = ((dept.spent / dept.allocated) * 100).toFixed(1);
+      });
+      
+      charts.departmentUtilization = new Chart(departmentUtilizationCtx, {
+        type: "bar",
+        data: {
+          labels: departmentData.map(dept => dept.name),
+          datasets: [{
+            label: "Budget Utilization (%)",
+            data: departmentData.map(dept => parseFloat(dept.utilization)),
+            backgroundColor: departmentData.map(dept => {
+              const utilization = parseFloat(dept.utilization);
+              if (utilization > 80) return "#ef4444"; // Red for high utilization
+              if (utilization > 60) return "#f59e0b"; // Orange for medium utilization
+              return "#10b981"; // Green for low utilization
+            }),
+            borderWidth: 1,
+            borderColor: "#ffffff",
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function (value) {
+                  return value + "%";
+                },
+              },
+              grid: {
+                color: "rgba(0,0,0,0.1)"
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return `${context.label}: ${context.parsed.x.toFixed(1)}%`;
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating department utilization chart:", error);
+    }
+
+    console.log("Fallback charts initialized successfully!");
+  }
+
+  async function loadAnomalies() {
+    try {
+      const response = await fetch(`/api/anomalies/<%= budget._id %>`);
+      const data = await response.json();
+
+      const anomalyList = document.getElementById("anomalyList");
+      const anomalyCount = document.getElementById("anomalyCount");
+
+      anomalyCount.textContent = data.anomalies.length;
+
+      if (data.anomalies.length === 0) {
+        anomalyList.innerHTML =
+          '<p class="no-data">No anomalies detected. Great job! 🎉</p>';
+        return;
+      }
+
+      anomalyList.innerHTML = data.anomalies
+        .map(
+          (anomaly) => `
+      <div class="anomaly-item ${anomaly.severity}">
+        <h4>${anomaly.title}</h4>
+        <p>${anomaly.description}</p>
+        <div class="anomaly-meta">
+          <span class="severity-badge">${anomaly.severity.toUpperCase()}</span>
+          <span class="anomaly-date">${new Date(
+            anomaly.detectedAt
+          ).toLocaleDateString()}</span>
+        </div>
+        <button onclick="resolveAnomaly('${
+          anomaly._id
+        }')" class="btn-small btn-primary">Resolve</button>
+      </div>
+    `
+        )
+        .join("");
+    } catch (error) {
+      console.error("Error loading anomalies:", error);
+    }
+  }
+
+  async function loadFeedback() {
+    try {
+      const response = await fetch(`/api/feedback/<%= budget._id %>`);
+      const data = await response.json();
+
+      const feedbackList = document.getElementById("feedbackList");
+
+      if (data.feedback.length === 0) {
+        feedbackList.innerHTML =
+          '<p class="no-data">No feedback yet. Be the first to share your thoughts!</p>';
+        return;
+      }
+
+      feedbackList.innerHTML = data.feedback
+        .map(
+          (feedback) => `
+      <div class="feedback-item">
+        <div class="feedback-header">
+          <h4>${feedback.title}</h4>
+          <span class="feedback-type">${feedback.type}</span>
+        </div>
+        <p>${feedback.message}</p>
+        <div class="feedback-meta">
+          <span class="feedback-author">${
+            feedback.userId ? feedback.userId.name : "Anonymous"
+          }</span>
+          <span class="feedback-date">${new Date(
+            feedback.createdAt
+          ).toLocaleDateString()}</span>
+        </div>
+        ${
+          feedback.adminResponse
+            ? `
+          <div class="admin-response">
+            <strong>Admin Response:</strong>
+            <p>${feedback.adminResponse.message}</p>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `
+        )
+        .join("");
+    } catch (error) {
+      console.error("Error loading feedback:", error);
+    }
+  }
+
+  async function loadHierarchy() {
+    const hierarchyTree = document.getElementById("hierarchyTree");
+    hierarchyTree.innerHTML =
+      "<p>Project hierarchy will be displayed here based on budget departments and vendors.</p>";
+  }
+
+  async function loadAIData() {
+    const budgetId = "<%= budget._id %>";
+
+    try {
+      // Load AI Summary
+    try {
+      const summaryResponse = await fetch(`/api/budget/${budgetId}/summary`);
+        if (summaryResponse.ok) {
+      const summaryData = await summaryResponse.json();
+      displayAISummary(summaryData);
+        } else {
+          displayAISummaryFallback();
+        }
+      } catch (error) {
+        console.warn("Failed to load AI summary:", error);
+        displayAISummaryFallback();
+      }
+
+      // Load FAQ
+      try {
+      const faqResponse = await fetch(`/api/budget/${budgetId}/faq`);
+        if (faqResponse.ok) {
+      const faqData = await faqResponse.json();
+      displayAIFAQ(faqData);
+        } else {
+          displayAIFAQFallback();
+        }
+      } catch (error) {
+        console.warn("Failed to load FAQ:", error);
+        displayAIFAQFallback();
+      }
+
+      // Load Sankey Diagram
+      try {
+      const sankeyResponse = await fetch(`/api/budget/${budgetId}/sankey`);
+        if (sankeyResponse.ok) {
+      const sankeyData = await sankeyResponse.json();
+      displaySankeyDiagram(sankeyData);
+        } else {
+          displaySankeyFallback();
+        }
+      } catch (error) {
+        console.warn("Failed to load Sankey data:", error);
+        displaySankeyFallback();
+      }
+
+    } catch (error) {
+      console.error("Error loading AI data:", error);
+      displayAIError();
+    }
+  }
+
+  function displayAISummary(summary) {
+    const summaryContainer = document.getElementById("aiSummary");
+
+    if (summary && summary.headline) {
+      summaryContainer.innerHTML = `
+      <div class="summary-content">
+        <h5>${summary.headline}</h5>
+        <ul class="summary-bullets">
+          ${
+            summary.bullets
+              ? summary.bullets.map((bullet) => `<li>${bullet}</li>`).join("")
+              : ""
+          }
+        </ul>
+        <div class="summary-numbers">
+          <div class="number-item">
+            <span class="number-label">Total</span>
+            <span class="number-value">${summary.numbers?.total || "N/A"}</span>
+          </div>
+          <div class="number-item">
+            <span class="number-label">Spent</span>
+            <span class="number-value">${summary.numbers?.spent || "N/A"}</span>
+          </div>
+          <div class="number-item">
+            <span class="number-label">Remaining</span>
+            <span class="number-value">${
+              summary.numbers?.remaining || "N/A"
+            }</span>
+          </div>
+        </div>
+      </div>
+    `;
+    } else {
+      summaryContainer.innerHTML =
+        "<p>Unable to generate AI summary at this time.</p>";
+    }
+  }
+
+  function displayAIFAQ(faq) {
+    const faqContainer = document.getElementById("aiFAQ");
+
+    if (faq && Array.isArray(faq) && faq.length > 0) {
+      faqContainer.innerHTML = faq
+        .map(
+          (item) => `
+      <div class="faq-item">
+        <h5>${item.q}</h5>
+        <p>${item.a}</p>
+      </div>
+    `
+        )
+        .join("");
+    } else {
+      faqContainer.innerHTML = "<p>Unable to generate FAQ at this time.</p>";
+    }
+  }
+
+  function displaySankeyDiagram(data) {
+    const svg = d3.select("#sankeyDiagram");
+    const container = document.getElementById("sankeyContainer");
+    const width = container.clientWidth || 800;
+    const height = 400;
+
+    svg.selectAll("*").remove();
+    svg.attr("width", width).attr("height", height);
+
+    if (!data || !data.nodes || data.nodes.length === 0) {
+      svg
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("fill", "#64748b")
+        .text("No fund flow data available");
+      return;
+    }
+
+    try {
+      // Create Sankey diagram using D3
+      const sankey = d3.sankey()
+        .nodeId(d => d.id)
+      .nodeWidth(15)
+      .nodePadding(10)
+        .extent([[1, 1], [width - 1, height - 5]]);
+
+    const { nodes, links } = sankey(data);
+
+      // Create gradient definitions
+      const defs = svg.append("defs");
+      
+      // Add links
+      svg.append("g")
+      .selectAll("path")
+      .data(links)
+      .join("path")
+      .attr("d", d3.sankeyLinkHorizontal())
+      .attr("fill", "none")
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.5)
+        .attr("stroke-width", d => Math.max(1, d.width));
+
+      // Add nodes
+      svg.append("g")
+      .selectAll("rect")
+      .data(nodes)
+      .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("fill", d => {
+        const colors = {
+          budget: "#2563eb",
+          department: "#10b981",
+          project: "#f59e0b",
+          vendor: "#ef4444",
+          transaction: "#8b5cf6",
+        };
+        return colors[d.type] || "#64748b";
+        })
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1);
+
+      // Add labels
+      svg.append("g")
+      .selectAll("text")
+      .data(nodes)
+      .join("text")
+        .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+        .attr("y", d => (d.y1 + d.y0) / 2)
+      .attr("dy", "0.35em")
+        .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+        .text(d => d.name)
+      .style("font-size", "12px")
+        .style("fill", "#374151")
+        .style("font-weight", "500");
+        
+    } catch (error) {
+      console.error("Error rendering Sankey diagram:", error);
+      svg
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", height / 2)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("fill", "#ef4444")
+        .text("Error rendering fund flow diagram");
+    }
+  }
+
+  function displayAISummaryFallback() {
+    const summaryContainer = document.getElementById("aiSummary");
+    const budgetData = window.budgetData;
+    
+    summaryContainer.innerHTML = `
+      <div class="summary-content">
+        <h5>📊 Budget Overview - ${budgetData.name}</h5>
+        <ul class="summary-bullets">
+          <li>Total budget allocated: ₹${budgetData.totalBudget.toLocaleString()}</li>
+          <li>Amount spent: ₹${budgetData.spent.toLocaleString()} (${((budgetData.spent / budgetData.totalBudget) * 100).toFixed(1)}%)</li>
+          <li>Remaining budget: ₹${budgetData.remaining.toLocaleString()}</li>
+          <li>Department: ${budgetData.department}</li>
+          <li>Status: ${budgetData.status}</li>
+        </ul>
+        <div class="summary-numbers">
+          <div class="number-item">
+            <span class="number-label">Total</span>
+            <span class="number-value">₹${budgetData.totalBudget.toLocaleString()}</span>
+          </div>
+          <div class="number-item">
+            <span class="number-label">Spent</span>
+            <span class="number-value">₹${budgetData.spent.toLocaleString()}</span>
+          </div>
+          <div class="number-item">
+            <span class="number-label">Remaining</span>
+            <span class="number-value">₹${budgetData.remaining.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function displayAIFAQFallback() {
+    const faqContainer = document.getElementById("aiFAQ");
+    const budgetData = window.budgetData;
+    
+    faqContainer.innerHTML = `
+      <div class="faq-item">
+        <h5>What is the total budget for this project?</h5>
+        <p>The total budget allocated for ${budgetData.name} is ₹${budgetData.totalBudget.toLocaleString()}.</p>
+      </div>
+      <div class="faq-item">
+        <h5>How much has been spent so far?</h5>
+        <p>As of now, ₹${budgetData.spent.toLocaleString()} has been spent, which represents ${((budgetData.spent / budgetData.totalBudget) * 100).toFixed(1)}% of the total budget.</p>
+      </div>
+      <div class="faq-item">
+        <h5>What is the remaining budget?</h5>
+        <p>The remaining budget is ₹${budgetData.remaining.toLocaleString()}, which is ${((budgetData.remaining / budgetData.totalBudget) * 100).toFixed(1)}% of the total allocation.</p>
+      </div>
+      <div class="faq-item">
+        <h5>What is the current status of this budget?</h5>
+        <p>The budget is currently in "${budgetData.status}" status and is managed by the ${budgetData.department} department.</p>
+      </div>
+    `;
+  }
+
+  function displaySankeyFallback() {
+    const sankeyContainer = document.getElementById("sankeyContainer");
+    sankeyContainer.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: #64748b;">
+        <h4>📊 Fund Flow Visualization</h4>
+        <p>Fund flow diagram will be displayed here once data is available.</p>
+        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <strong>Budget Flow:</strong><br>
+          Total Budget → Department → Spent/Remaining
+        </div>
+      </div>
+    `;
+  }
+
+  function displayAIError() {
+    document.getElementById("aiSummary").innerHTML =
+      "<p>Error loading AI data. Please try again later.</p>";
+    document.getElementById("aiFAQ").innerHTML =
+      "<p>Error loading FAQ. Please try again later.</p>";
+    document.getElementById("sankeyContainer").innerHTML =
+      "<p>Error loading fund flow visualization. Please try again later.</p>";
+  }
+
+  async function submitFeedback() {
+    const message = document.getElementById("feedbackMessage").value;
+    const type = document.getElementById("feedbackType").value;
+
+    if (!message.trim()) {
+      alert("Please enter your feedback message.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          budgetId: "<%= budget._id %>",
+          type: type,
+          title: message.substring(0, 50) + (message.length > 50 ? "..." : ""),
+          message: message,
+          category: "other",
+        }),
+      });
+
+      if (response.ok) {
+        alert("Feedback submitted successfully!");
+        document.getElementById("feedbackMessage").value = "";
+        loadFeedback();
+      } else {
+        alert("Failed to submit feedback. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      alert("Error submitting feedback. Please try again.");
+    }
+  }
+
+  async function resolveAnomaly(anomalyId) {
+    const resolution = prompt("Please provide a resolution for this anomaly:");
+    if (!resolution) return;
+
+    try {
+      const response = await fetch(`/api/anomalies/${anomalyId}/resolve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ resolution }),
+      });
+
+      if (response.ok) {
+        alert("Anomaly resolved successfully!");
+        loadAnomalies();
+      } else {
+        alert("Failed to resolve anomaly. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error resolving anomaly:", error);
+      alert("Error resolving anomaly. Please try again.");
+    }
+  }
+
+  function addDepartment() {
+    const name = prompt("Enter department name:");
+    const budget = prompt("Enter allocated budget:");
+
+    if (!name || !budget) return;
+
+    console.log("Adding department:", name, budget);
+  }
+
+  function refreshData() {
+    loadAnomalies();
+    loadFeedback();
+    loadHierarchy();
+  }
+
+  function exportData() {
+    const budgetId = "<%= budget._id %>";
+    const budgetName = "<%= budget.name %>";
+
+    const link = document.createElement("a");
+    link.href = `/api/budget/${budgetId}/export/pdf`;
+    link.download = `budget-report-${budgetName.replace(
+      /[^a-zA-Z0-9]/g,
+      "-"
+    )}-${new Date().toISOString().split("T")[0]}.pdf`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log("Exporting PDF report...");
+  }
+
+  function toggleChatbot() {
+    const chatbotWindow = document.getElementById("chatbotWindow");
+    const chatbotBtn = document.getElementById("chatbotToggle");
+
+    if (chatbotWindow.style.display === "none") {
+      chatbotWindow.style.display = "block";
+      chatbotBtn.innerHTML =
+        '<span class="chatbot-icon">🤖</span><span class="chatbot-text">Close Assistant</span>';
+      document.getElementById("chatbotInput").focus();
+    } else {
+      chatbotWindow.style.display = "none";
+      chatbotBtn.innerHTML =
+        '<span class="chatbot-icon">🤖</span><span class="chatbot-text">Ask AI Assistant</span>';
+    }
+  }
+
+  function handleChatbotKeyPress(event) {
+    if (event.key === "Enter") {
+      sendChatbotMessage();
+    }
+  }
+
+  async function sendChatbotMessage() {
+    const input = document.getElementById("chatbotInput");
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    addMessageToChat(message, "user");
+    input.value = "";
+
+    const sendBtn = document.querySelector(".chatbot-send");
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Thinking...";
+
+    try {
+      const response = await fetch("/api/chatbot/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: message,
+          budgetId: "<%= budget._id %>",
+          context: {
+            budgetName: window.budgetData.name,
+            department: window.budgetData.department,
+            totalBudget: budgetTotal,
+            spent: budgetSpent,
+            remaining: budgetRemaining,
+            status: window.budgetData.status,
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        addMessageToChat(data.response, "bot");
+      } else {
+        addMessageToChat(
+          "Sorry, I encountered an error. Please try again.",
+          "bot"
+        );
+      }
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      addMessageToChat(
+        "Sorry, I'm having trouble connecting. Please try again later.",
+        "bot"
+      );
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send";
+    }
+  }
+
+  function addMessageToChat(message, sender) {
+    const messagesContainer = document.getElementById("chatbotMessages");
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `chatbot-message ${sender}-message`;
+
+    messageDiv.innerHTML = `
+    <div class="message-content">
+      <p>${message}</p>
+    </div>
+  `;
+
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+</script>
+
+<%- include('partials/footer') %>

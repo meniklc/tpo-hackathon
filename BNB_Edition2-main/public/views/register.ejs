@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<div class="form-container">
+<h1>Register</h1>
+<% if(error){ %><div class="error"><%= error %></div><% } %>
+<form method="post">
+<input type="text" name="name" placeholder="Name" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="password" name="password" placeholder="Password" required>
+<input type="password" name="confirmPassword" placeholder="Confirm Password" required>
+<select name="role" required>
+<option value="">Select Role</option>
+<option value="public">Public User</option>
+<option value="editor">Editor</option>
+<option value="manager">Manager</option>
+<option value="admin">Admin</option>
+</select>
+<button type="submit">Register</button>
+</form>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,131 @@
+<%- include('partials/header') %>
+<div class="container">
+  <h2>Transactions - <%= vendor.name %></h2>
+  <p><strong>Vendor Allocated Amount:</strong> ₹<%= vendor.allocatedAmount.toLocaleString() %></p>
+  
+  <div class="add-section">
+    <h3>Add New Transaction</h3>
+    <form method="post" class="form-grid">
+      <input type="text" name="description" placeholder="Transaction Description" required>
+      <input type="number" name="amount" placeholder="Amount" required>
+      <textarea name="notes" placeholder="Notes" rows="3"></textarea>
+      <button type="submit">Add Transaction</button>
+    </form>
+  </div>
+
+  <div class="transactions-list">
+    <% transactions.forEach(transaction => { %>
+    <div class="transaction-card">
+      <div class="transaction-header">
+        <h3><%= transaction.description %></h3>
+        <span class="status-badge status-<%= transaction.status %>"><%= transaction.status %></span>
+      </div>
+      <p><strong>Amount:</strong> ₹<%= transaction.amount.toLocaleString() %></p>
+      <p><strong>Date:</strong> <%= new Date(transaction.createdAt).toLocaleDateString() %></p>
+      <% if(transaction.notes) { %>
+      <p><strong>Notes:</strong> <%= transaction.notes %></p>
+      <% } %>
+      <% if(transaction.approvedBy) { %>
+      <p><strong>Approved By:</strong> <%= transaction.approvedBy %></p>
+      <p><strong>Approved At:</strong> <%= new Date(transaction.approvedAt).toLocaleDateString() %></p>
+      <% } %>
+      <p><strong>Transaction Hash:</strong> <code><%= transaction.transactionHash %></code></p>
+      
+      <% if(session.isAdmin && transaction.status === 'pending') { %>
+      <div class="admin-actions">
+        <form method="post" action="/transaction/<%= transaction._id %>/approve" style="display: inline;">
+          <button type="submit" class="btn-approve">Approve</button>
+        </form>
+        <form method="post" action="/transaction/<%= transaction._id %>/reject" style="display: inline;">
+          <button type="submit" class="btn-reject">Reject</button>
+        </form>
+      </div>
+      <% } %>
+    </div>
+    <% }) %>
+  </div>
+</div>
+
+<style>
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.form-grid textarea {
+  grid-column: span 2;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  resize: vertical;
+}
+
+.form-grid input {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+}
+
+.form-grid button {
+  grid-column: span 2;
+  padding: 0.75rem;
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transaction-card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-left: 4px solid #007bff;
+}
+
+.transaction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.admin-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-approve {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-reject {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+code {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+</style>
+
+<%- include('partials/footer') %>

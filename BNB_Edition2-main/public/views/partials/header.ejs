@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title><%= title %></title>
+<link rel="stylesheet" href="/css/global.css">
+<script src="/js/location.js" defer></script>
+<script src="/js/currency.js" defer></script>
+</head>
+<body>
+<header>
+<h1><a href="/">BNB Fund</a></h1>
+<div class="header-controls">
+  <div class="currency-toggle">
+    <button id="currencyBtn" onclick="toggleCurrency()" class="currency-btn">
+      <span id="currencySymbol">₹</span> <span id="currencyCode">INR</span>
+    </button>
+  </div>
+  <nav>
+    <% if(session.userId){ %>
+    <a href="/">Home</a>
+    <% if(session.userRole !== 'editor'){ %><a href="/budget/new">New Project</a><% } %>
+    <% if(session.isAdmin){ %><a href="/admin/dashboard">Admin Dashboard</a><% } %>
+    <% if(session.userRole === 'editor'){ %><a href="/editor/dashboard">Editor Dashboard</a><% } %>
+    <% if(session.userRole === 'manager' || session.userRole === 'public'){ %><a href="/dashboard">My Dashboard</a><% } %>
+    <a href="/logout">Logout</a>
+    <% } else { %>
+    <a href="/login">Login</a>
+    <a href="/register">Register</a>
+    <% } %>
+  </nav>
+</div>
+</header>
+<main>

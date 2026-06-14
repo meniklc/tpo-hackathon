@@ -1,0 +1,33 @@
+const express = require("express");
+const router = express.Router();
+const apiController = require("../controllers/apiController");
+const { upload } = require("../services/cloudinaryService");
+
+router.get("/budget/:id/charts/spending", apiController.getSpendingChart);
+router.get("/budget/:id/charts/departments", apiController.getDepartmentChart);
+router.get("/budget/:id/charts/timeline", apiController.getTimelineChart);
+router.get("/budget/:id/charts/vendors", apiController.getVendorChart);
+router.get("/budget/:id/sankey", apiController.getSankeyData);
+router.get("/budget/:id/transactions", apiController.getBudgetTransactions);
+router.get("/budget/:id/summary", apiController.getBudgetSummary);
+router.get("/budget/:id/faq", apiController.getFAQ);
+router.get("/budget/:id/export", apiController.exportBudget);
+router.get("/budget/:id/export/pdf", apiController.exportPDF);
+router.get("/budget/:id/departments", apiController.getDepartments);
+router.post("/budget/:budgetId/departments", apiController.addDepartment);
+router.post("/budget/:budgetId/departments/:deptIndex/vendors", apiController.addVendor);
+router.get("/anomalies/:id", apiController.getAnomalies);
+router.get("/anomalies/:budgetId", apiController.getActiveAnomalies);
+router.post("/anomalies/:anomalyId/resolve", apiController.resolveAnomaly);
+router.post("/run-anomaly-detection/:budgetId", apiController.runAnomalyDetection);
+router.get("/feedback/:id", apiController.getFeedback);
+router.post("/feedback", apiController.submitFeedback);
+router.post("/chatbot", apiController.chatbot);
+router.post("/chatbot/ask", apiController.chatbotAsk);
+router.post("/ocr/process", upload.single('image'), apiController.processOCR);
+router.post("/ocr/process-url", apiController.processOCRUrl);
+router.get("/transaction/:id/qr", apiController.getTransactionQR);
+router.post("/transaction/:id/classify", apiController.classifyTransaction);
+router.get("/budget/:id/insights", apiController.getBudgetInsights);
+
+module.exports = router;

@@ -1,0 +1,1051 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <h3>🏛️ Admin Dashboard</h3>
+      <div style="display: flex; gap: 1rem;">
+        <a href="/admin/transactions/pending">
+          <button style="background: linear-gradient(135deg, #f59e0b, #d97706);">⏳ Pending Transactions</button>
+        </a>
+        <button onclick="showGenerateEditorsModal()" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">👥 Generate Editors</button>
+        <a href="/budget/new">
+          <button>➕ Create New Project</button>
+        </a>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number"><%= budgets.length %></div>
+        <div>Total Projects</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number"><%= stats.totalEditors %></div>
+        <div>Total Editors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number"><%= stats.activeEditors %></div>
+        <div>Active Editors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number"><%= stats.totalTransactions %></div>
+        <div>Total Transactions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number amount-display" data-amount="<%= budgets.reduce((sum, b) => sum + b.totalBudget, 0) %>">₹<%= budgets.reduce((sum, b) => sum + b.totalBudget, 0).toLocaleString() %></div>
+        <div>Total Budget</div>
+      </div>
+    </div>
+
+    <!-- Recent Transactions Section -->
+    <div class="recent-transactions-section">
+      <div class="section-header">
+        <h3>💰 Recent Transactions</h3>
+        <div class="section-actions">
+          <a href="/admin/transactions/pending">
+            <button class="btn-warning">⏳ Review Pending</button>
+          </a>
+        </div>
+      </div>
+      <div class="transactions-container">
+        <% if(recentTransactions && recentTransactions.length > 0) { %>
+          <div class="transactions-grid">
+            <% recentTransactions.slice(0, 8).forEach(transaction => { %>
+              <div class="transaction-card">
+                <div class="transaction-header">
+                  <h4><%= transaction.description %></h4>
+                  <span class="status-badge status-<%= transaction.status %>">
+                    <%= transaction.status %>
+                  </span>
+                </div>
+                <div class="transaction-details">
+                  <div class="detail-row">
+                    <span class="label">Amount:</span>
+                    <span class="amount-display" data-amount="<%= transaction.amount %>">₹<%= transaction.amount.toLocaleString() %></span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Project:</span>
+                    <span><%= transaction.budgetName || transaction.budgetId?.name || 'N/A' %></span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Department:</span>
+                    <span><%= transaction.budgetId?.department || 'N/A' %></span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Date:</span>
+                    <span><%= new Date(transaction.createdAt).toLocaleDateString() %></span>
+                  </div>
+                </div>
+                <div class="transaction-actions">
+                  <a href="/budget/<%= transaction.budgetId %>" class="btn-small">View Project</a>
+                  <% if(transaction.status === 'pending') { %>
+                    <a href="/admin/transactions/pending" class="btn-small btn-warning">Review</a>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="no-transactions">
+            <div class="empty-icon">📋</div>
+            <h4>No Recent Transactions</h4>
+            <p>No transactions found for your projects.</p>
+            <button onclick="showAddTransactionModal()" class="btn-primary">Add First Transaction</button>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Admin Transaction Management Section -->
+    <div class="admin-transaction-section">
+      <h3>💼 Admin Transaction Management</h3>
+      <div class="admin-actions">
+        <button onclick="showAddTransactionModal()" class="btn-primary">➕ Add Transaction</button>
+        <button onclick="showBulkUploadModal()" class="btn-secondary">📤 Bulk Upload</button>
+        <a href="/admin/transactions/pending">
+          <button class="btn-warning">⏳ Review Pending</button>
+        </a>
+      </div>
+    </div>
+
+    <h3>📋 My Projects</h3>
+    <div class="cards">
+      <% budgets.forEach(budget=>{ %>
+      <div class="card">
+        <div class="card-header">
+          <h3><%= budget.name %></h3>
+          <span class="status-badge status-<%= budget.status %>"><%= budget.status %></span>
+        </div>
+
+        <div class="budget-info">
+          <p><strong>🏢 Department:</strong> <%= budget.department %></p>
+          <p><strong>📍 State:</strong> <%= budget.state %></p>
+          <p><strong>🏙️ City:</strong> <%= budget.city || 'N/A' %></p>
+          <p><strong>💰 Total Budget:</strong> <span class="amount-display" data-amount="<%= budget.totalBudget %>">₹<%= budget.totalBudget.toLocaleString() %></span></p>
+          <p><strong>📅 Fiscal Year:</strong> <%= budget.fiscalYear %></p>
+          <p><strong>✅ Approved By:</strong> <%= budget.approvedBy %></p>
+          <p><strong>🏷️ Type:</strong> <%= budget.type %></p>
+        </div>
+
+        <% if (budget.editorEmail && budget.editorPassword) { %>
+        <div class="editor-credentials">
+          <h4>👤 Editor Credentials</h4>
+          <div class="credential-item">
+            <div class="credential-row">
+              <strong>📧 Email:</strong> 
+              <span class="credential-value" id="email-<%= budget._id %>"><%= budget.editorEmail %></span>
+              <button onclick="copyToClipboard('email-<%= budget._id %>')" class="copy-btn">📋</button>
+            </div>
+            <div class="credential-row">
+              <strong>🔑 Password:</strong> 
+              <span class="credential-value" id="pass-<%= budget._id %>"><%= budget.editorPassword %></span>
+              <button onclick="copyToClipboard('pass-<%= budget._id %>')" class="copy-btn">📋</button>
+            </div>
+            <div class="credential-info">
+              <small>💡 Share these credentials with the editor to allow them to login and manage this budget</small>
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+        <div class="card-actions">
+          <a href="/budget/<%= budget._id %>"><button>👁️ View</button></a>
+          <a href="/budget/<%= budget._id %>/edit"><button>✏️ Edit</button></a>
+          <a href="/budget/<%= budget._id %>/departments"><button>🏢 Departments</button></a>
+          <a href="/budget/<%= budget._id %>/visualization"><button class="btn-ai">📊 Analytics & Visualization</button></a>
+        </div>
+        
+        <!-- Admin Status Management -->
+        <div class="status-management">
+          <h4>📊 Status Management</h4>
+          <div class="status-controls">
+            <select id="status-<%= budget._id %>" class="status-select">
+              <option value="draft" <%= budget.status === 'draft' ? 'selected' : '' %>>Draft</option>
+              <option value="pending" <%= budget.status === 'pending' ? 'selected' : '' %>>Pending</option>
+              <option value="approved" <%= budget.status === 'approved' ? 'selected' : '' %>>Approved</option>
+              <option value="rejected" <%= budget.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
+              <option value="ongoing" <%= budget.status === 'ongoing' ? 'selected' : '' %>>Ongoing</option>
+              <option value="finished" <%= budget.status === 'finished' ? 'selected' : '' %>>Finished</option>
+            </select>
+            <button onclick="updateBudgetStatus('<%= budget._id %>')" class="btn-update-status">Update Status</button>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+
+    <% if (budgets.length === 0) { %>
+    <div class="empty-state">
+      <h3>No projects found</h3>
+      <p>Create your first project to start managing budgets.</p>
+      <a href="/budget/new">
+        <button>Create Project</button>
+      </a>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<style>
+.editor-credentials {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(37, 99, 235, 0.05);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.editor-credentials h4 {
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.credential-item {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.credential-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.credential-row:last-child {
+  margin-bottom: 0;
+}
+
+.credential-value {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  background: rgba(241, 245, 249, 0.5);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.copy-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: var(--transition);
+}
+
+.copy-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.credential-info {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid var(--success-color);
+}
+
+.credential-info small {
+  color: var(--success-color);
+  font-weight: 500;
+}
+
+.status-management {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.status-management h4 {
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.status-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.status-select {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.9rem;
+  min-width: 120px;
+}
+
+.btn-update-status {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.btn-update-status:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.empty-state h3 {
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  color: var(--secondary-color);
+  margin-bottom: 2rem;
+}
+
+/* Recent Transactions Styling */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.transactions-container {
+  margin-top: 1rem;
+}
+
+.transactions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.transaction-card {
+  background: var(--card-gradient);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-light);
+  padding: 1.5rem;
+  border-left: 4px solid var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.transaction-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.transaction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.transaction-header h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.transaction-details {
+  margin-bottom: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-row .label {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.detail-row span:not(.label) {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.transaction-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.btn-small {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-small:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-warning:hover {
+  background: #d97706;
+}
+
+.no-transactions {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-transactions h4 {
+  color: var(--secondary-color);
+  margin-bottom: 0.5rem;
+}
+
+.no-transactions p {
+  color: var(--secondary-color);
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .transactions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .transaction-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .transaction-actions {
+    justify-content: flex-start;
+  }
+}
+</style>
+
+<script type="application/json" id="budgets-data"><%- JSON.stringify(budgets) %></script>
+<script>
+// Get budgets data from JSON script tag
+const budgetsDataScript = document.getElementById('budgets-data');
+window.budgetsData = budgetsDataScript ? JSON.parse(budgetsDataScript.textContent) : [];
+
+function copyToClipboard(elementId) {
+  const element = document.getElementById(elementId);
+  const text = element.textContent;
+  
+  navigator.clipboard.writeText(text).then(() => {
+        const btn = element.nextElementSibling;
+    const originalText = btn.textContent;
+    btn.textContent = '✅';
+    btn.style.background = 'var(--success-color)';
+    
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = 'var(--primary-color)';
+    }, 2000);
+  }).catch(err => {
+    console.error('Failed to copy: ', err);
+    alert('Failed to copy to clipboard');
+  });
+}
+
+async function updateBudgetStatus(budgetId) {
+  const statusSelect = document.getElementById(`status-${budgetId}`);
+  const newStatus = statusSelect.value;
+  
+  try {
+    const response = await fetch(`/admin/budget/${budgetId}/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+            const statusBadge = document.querySelector(`[data-budget-id="${budgetId}"] .status-badge`);
+      if (statusBadge) {
+        statusBadge.textContent = newStatus;
+        statusBadge.className = `status-badge status-${newStatus}`;
+      }
+      
+            showNotification('Status updated successfully!', 'success');
+    } else {
+      showNotification('Failed to update status', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating status:', error);
+    showNotification('Error updating status', 'error');
+  }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+  
+    notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  `;
+  
+  if (type === 'success') {
+    notification.style.background = 'var(--success-color)';
+  } else {
+    notification.style.background = '#ef4444';
+  }
+  
+    document.body.appendChild(notification);
+  
+    setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 300);
+  }, 3000);
+}
+
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+</script>
+
+<!-- Generate Editors Modal -->
+<div id="generateEditorsModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👥 Generate Multiple Editors</h3>
+      <span class="close" onclick="closeGenerateEditorsModal()">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="generateEditorsForm">
+        <div class="form-group">
+          <label for="budgetSelect">Select Budget:</label>
+          <select id="budgetSelect" name="budgetId" required>
+            <option value="">Choose a budget...</option>
+            <% budgets.forEach(budget => { %>
+              <option value="<%= budget._id %>"><%= budget.name %> (<%= budget.department %>)</option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editorCount">Number of Editors to Generate:</label>
+          <input type="number" id="editorCount" name="departmentCount" min="1" max="10" value="3" required>
+        </div>
+        <div class="form-group">
+          <p class="help-text">This will create editors named "Editor 1", "Editor 2", etc. with auto-generated emails and passwords.</p>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeGenerateEditorsModal()" class="btn-secondary">Cancel</button>
+      <button onclick="generateEditors()" class="btn-primary">Generate Editors</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #1e293b;
+}
+
+.close {
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.close:hover {
+  color: #1e293b;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.help-text {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+}
+</style>
+
+<script>
+function showGenerateEditorsModal() {
+  document.getElementById('generateEditorsModal').style.display = 'flex';
+}
+
+function closeGenerateEditorsModal() {
+  document.getElementById('generateEditorsModal').style.display = 'none';
+}
+
+async function generateEditors() {
+  const form = document.getElementById('generateEditorsForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+  
+  if (!data.budgetId || !data.departmentCount) {
+    alert('Please fill in all fields');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/admin/editors/generate-multiple', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+            let message = `Successfully generated ${result.editors.length} editors:\n\n`;
+      result.editors.forEach(editor => {
+        message += `• ${editor.name} (${editor.department})\n`;
+        message += `  Email: ${editor.email}\n`;
+        message += `  Password: ${editor.password}\n\n`;
+      });
+      
+      alert(message);
+      closeGenerateEditorsModal();
+            window.location.reload();
+    } else {
+      alert('Error: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error generating editors:', error);
+    alert('Failed to generate editors. Please try again.');
+  }
+}
+
+window.onclick = function(event) {
+  const modal = document.getElementById('generateEditorsModal');
+  if (event.target === modal) {
+    closeGenerateEditorsModal();
+  }
+}
+
+function showAddTransactionModal() {
+    if (!document.getElementById('addTransactionModal')) {
+    createAddTransactionModal();
+  }
+  document.getElementById('addTransactionModal').style.display = 'block';
+}
+
+function createAddTransactionModal() {
+  const modal = document.createElement('div');
+  modal.id = 'addTransactionModal';
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>➕ Add New Transaction</h3>
+        <span class="close" onclick="closeAddTransactionModal()">&times;</span>
+      </div>
+      <form id="adminTransactionForm" enctype="multipart/form-data">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="adminDepartment">Select Department *</label>
+            <select id="adminDepartment" name="department" required onchange="updateBudgetOptions()">
+              <option value="">Choose a department...</option>
+              <% 
+                const departments = [...new Set(budgets.map(b => b.department))];
+                departments.forEach(dept => { 
+              %>
+                <option value="<%= dept %>"><%= dept %></option>
+              <% }) %>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="adminBudgetId">Select Project *</label>
+            <select id="adminBudgetId" name="budgetId" required disabled>
+              <option value="">First select a department...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="adminCategory">Category</label>
+            <select id="adminCategory" name="category">
+              <option value="">Select category...</option>
+              <option value="office_supplies">Office Supplies</option>
+              <option value="travel">Travel</option>
+              <option value="equipment">Equipment</option>
+              <option value="utilities">Utilities</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="adminVendor">Vendor/Supplier</label>
+            <input type="text" id="adminVendor" name="vendor" placeholder="Enter vendor name">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="adminDescription">Description *</label>
+            <input type="text" id="adminDescription" name="description" required placeholder="Enter transaction description">
+          </div>
+          
+          <div class="form-group">
+            <label for="adminAmount">Amount (₹) *</label>
+            <input type="number" id="adminAmount" name="amount" step="0.01" required placeholder="0.00">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="adminDate">Date</label>
+            <input type="date" id="adminDate" name="date">
+          </div>
+          
+          <div class="form-group">
+            <label for="adminPriority">Priority</label>
+            <select id="adminPriority" name="priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="adminReceipt">Receipt Upload</label>
+          <div class="file-upload-area" id="adminFileUploadArea">
+            <div class="upload-icon">📁</div>
+            <p>Drop receipt here or click to browse</p>
+            <p class="file-types">Supports JPG, PNG, PDF files up to 10MB</p>
+            <input type="file" id="adminReceipt" name="receipt" accept="image/*,.pdf" style="display: none;">
+            <button type="button" onclick="document.getElementById('adminReceipt').click()">Choose File</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="adminNotes">Notes</label>
+          <textarea id="adminNotes" name="notes" rows="3" placeholder="Additional notes..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" id="adminSubmitBtn">Create Transaction</button>
+          <button type="button" onclick="closeAddTransactionModal()" class="btn-secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+    document.getElementById('adminTransactionForm').addEventListener('submit', handleAdminTransactionSubmit);
+  document.getElementById('adminReceipt').addEventListener('change', handleAdminFileSelect);
+  document.getElementById('adminFileUploadArea').addEventListener('click', () => document.getElementById('adminReceipt').click());
+}
+
+function closeAddTransactionModal() {
+  const modal = document.getElementById('addTransactionModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function handleAdminFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const uploadArea = document.getElementById('adminFileUploadArea');
+    uploadArea.innerHTML = `
+      <div class="file-preview">
+        <div class="file-info">
+          <h4>${file.name}</h4>
+          <p>${formatFileSize(file.size)}</p>
+          <button type="button" onclick="resetAdminFileUpload()">Remove</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function resetAdminFileUpload() {
+  const uploadArea = document.getElementById('adminFileUploadArea');
+  uploadArea.innerHTML = `
+    <div class="upload-icon">📁</div>
+    <p>Drop receipt here or click to browse</p>
+    <p class="file-types">Supports JPG, PNG, PDF files up to 10MB</p>
+    <input type="file" id="adminReceipt" name="receipt" accept="image/*,.pdf" style="display: none;">
+    <button type="button" onclick="document.getElementById('adminReceipt').click()">Choose File</button>
+  `;
+  document.getElementById('adminReceipt').addEventListener('change', handleAdminFileSelect);
+  document.getElementById('adminFileUploadArea').addEventListener('click', () => document.getElementById('adminReceipt').click());
+}
+
+async function handleAdminTransactionSubmit(event) {
+  event.preventDefault();
+  
+  const formData = new FormData(event.target);
+  const submitBtn = document.getElementById('adminSubmitBtn');
+  
+    const description = formData.get('description');
+  const amount = formData.get('amount');
+  const budgetId = formData.get('budgetId');
+  const department = formData.get('department');
+  
+  if (!description || !amount || !budgetId || !department) {
+    alert('Please fill in all required fields including department and project selection');
+    return;
+  }
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating Transaction...';
+  
+  try {
+    const response = await fetch('/admin/transaction/new', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('Transaction created successfully!');
+      closeAddTransactionModal();
+      window.location.reload();
+    } else {
+      alert('Failed to create transaction: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Error creating transaction:', error);
+    alert('Error creating transaction: ' + error.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Create Transaction';
+  }
+}
+
+function showBulkUploadModal() {
+  alert('Bulk upload feature coming soon!');
+}
+
+// Department-based budget filtering
+function updateBudgetOptions() {
+  const departmentSelect = document.getElementById('adminDepartment');
+  const budgetSelect = document.getElementById('adminBudgetId');
+  const selectedDepartment = departmentSelect.value;
+  
+  // Clear existing options
+  budgetSelect.innerHTML = '<option value="">Choose a project...</option>';
+  
+  if (selectedDepartment) {
+    budgetSelect.disabled = false;
+    
+    // Filter budgets by selected department
+    const budgets = window.budgetsData || [];
+    const filteredBudgets = budgets.filter(budget => budget.department === selectedDepartment);
+    
+    filteredBudgets.forEach(budget => {
+      const option = document.createElement('option');
+      option.value = budget._id;
+      option.textContent = `${budget.name} (₹${budget.totalBudget.toLocaleString()})`;
+      budgetSelect.appendChild(option);
+    });
+  } else {
+    budgetSelect.disabled = true;
+    budgetSelect.innerHTML = '<option value="">First select a department...</option>';
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>
+
+<%- include('partials/footer') %>

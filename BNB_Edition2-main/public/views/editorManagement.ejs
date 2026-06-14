@@ -1,0 +1,262 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-section">
+    <div
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+      "
+    >
+      <h3>👥 Editor Management</h3>
+      <a href="/admin/editors/new">
+        <button>➕ Create New Editor</button>
+      </a>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number"><%= editors.length %></div>
+        <div>Total Editors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">
+          <%= editors.filter(e => e.isActive).length %>
+        </div>
+        <div>Active Editors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">
+          <%= editors.reduce((sum, e) => sum + e.assignedBudgets.length, 0) %>
+        </div>
+        <div>Budget Assignments</div>
+      </div>
+    </div>
+
+    <div class="cards">
+      <% editors.forEach(editor => { %>
+      <div class="card">
+        <div class="card-header">
+          <h3><%= editor.name %></h3>
+          <span
+            class="status-badge status-<%= editor.isActive ? 'active' : 'inactive' %>"
+          >
+            <%= editor.isActive ? 'Active' : 'Inactive' %>
+          </span>
+        </div>
+
+        <div class="budget-info">
+          <p><strong>📧 Email:</strong> <%= editor.email %></p>
+          <p><strong>🎭 Role:</strong> <%= editor.role %></p>
+          <p>
+            <strong>📊 Assigned Budgets:</strong> <%=
+            editor.assignedBudgets.length %>
+          </p>
+          <p>
+            <strong>📈 Transactions Created:</strong> <%=
+            editor.stats.transactionsCreated %>
+          </p>
+          <p>
+            <strong>📄 Receipts Uploaded:</strong> <%=
+            editor.stats.receiptsUploaded %>
+          </p>
+          <p>
+            <strong>💰 Total Processed:</strong> ₹<%=
+            editor.stats.totalAmountProcessed.toLocaleString() %>
+          </p>
+          <% if (editor.lastLogin) { %>
+          <p>
+            <strong>🕒 Last Login:</strong> <%= new
+            Date(editor.lastLogin).toLocaleDateString() %>
+          </p>
+          <% } %>
+        </div>
+
+        <div class="permissions-section">
+          <h4>🔐 Permissions</h4>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 0.5rem;
+              margin-top: 1rem;
+            "
+          >
+            <div
+              class="permission-item <%= editor.permissions.canCreateTransactions ? 'allowed' : 'denied' %>"
+            >
+              <%= editor.permissions.canCreateTransactions ? '✅' : '❌' %>
+              Create Transactions
+            </div>
+            <div
+              class="permission-item <%= editor.permissions.canUploadReceipts ? 'allowed' : 'denied' %>"
+            >
+              <%= editor.permissions.canUploadReceipts ? '✅' : '❌' %> Upload
+              Receipts
+            </div>
+            <div
+              class="permission-item <%= editor.permissions.canEditBudgets ? 'allowed' : 'denied' %>"
+            >
+              <%= editor.permissions.canEditBudgets ? '✅' : '❌' %> Edit
+              Budgets
+            </div>
+            <div
+              class="permission-item <%= editor.permissions.canApproveTransactions ? 'allowed' : 'denied' %>"
+            >
+              <%= editor.permissions.canApproveTransactions ? '✅' : '❌' %>
+              Approve Transactions
+            </div>
+          </div>
+        </div>
+
+        <% if (editor.assignedBudgets.length > 0) { %>
+        <div class="assigned-budgets">
+          <h4>📋 Assigned Budgets</h4>
+          <div style="margin-top: 1rem">
+            <% editor.assignedBudgets.forEach(budget => { %>
+            <div class="budget-item">
+              <strong><%= budget.name %></strong>
+              <span class="budget-status status-<%= budget.status %>"
+                ><%= budget.status %></span
+              >
+            </div>
+            <% }) %>
+          </div>
+        </div>
+        <% } %>
+
+        <div class="card-actions">
+          <button onclick="editEditor('<%= editor._id %>')">✏️ Edit</button>
+          <button onclick="viewEditorDetails('<%= editor._id %>')">
+            👁️ View Details
+          </button>
+          <button onclick="assignBudgets('<%= editor._id %>')">
+            📋 Assign Budgets
+          </button>
+          <% if (editor.isActive) { %>
+          <button
+            onclick="deactivateEditor('<%= editor._id %>')"
+            class="btn-warning"
+          >
+            ⏸️ Deactivate
+          </button>
+          <% } else { %>
+          <button
+            onclick="activateEditor('<%= editor._id %>')"
+            class="btn-success"
+          >
+            ▶️ Activate
+          </button>
+          <% } %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+
+    <% if (editors.length === 0) { %>
+    <div class="empty-state">
+      <h3>No editors found</h3>
+      <p>Create your first editor to start managing budgets.</p>
+      <a href="/admin/editors/new">
+        <button>Create Editor</button>
+      </a>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<style>
+  .permission-item {
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .permission-item.allowed {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .permission-item.denied {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+
+  .budget-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(241, 245, 249, 0.5);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid var(--accent-color);
+  }
+
+  .budget-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--card-gradient);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-light);
+  }
+
+  .empty-state h3 {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state p {
+    color: var(--secondary-color);
+    margin-bottom: 2rem;
+  }
+
+  .btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+</style>
+
+<script>
+  function editEditor(editorId) {
+    alert("Edit editor functionality coming soon!");
+  }
+
+  function viewEditorDetails(editorId) {
+    alert("View editor details functionality coming soon!");
+  }
+
+  function assignBudgets(editorId) {
+    alert("Assign budgets functionality coming soon!");
+  }
+
+  function deactivateEditor(editorId) {
+    if (confirm("Are you sure you want to deactivate this editor?")) {
+      alert("Deactivate editor functionality coming soon!");
+    }
+  }
+
+  function activateEditor(editorId) {
+    if (confirm("Are you sure you want to activate this editor?")) {
+      alert("Activate editor functionality coming soon!");
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,478 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-section">
+    <div class="section-header">
+      <h2>✏️ Edit Project: <%= budget.name %></h2>
+      <div class="section-actions">
+        <a href="/admin/dashboard">
+          <button class="btn-secondary">← Back to Dashboard</button>
+        </a>
+      </div>
+    </div>
+
+    <% if(error){ %>
+      <div class="error-message">
+        <strong>Error:</strong> <%= error %>
+      </div>
+    <% } %>
+
+    <div class="edit-form-container">
+      <form id="editBudgetForm" method="post" class="enhanced-form">
+        <!-- Basic Information -->
+        <div class="form-section">
+          <h3>📋 Basic Information</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Project Name *</label>
+              <input type="text" id="name" name="name" value="<%= budget.name %>" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="department">Department *</label>
+              <input type="text" id="department" name="department" value="<%= budget.department %>" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="state">State *</label>
+              <select id="state" name="state" required>
+                <option value="">Select State</option>
+                <% 
+                  const indianStates = [
+                    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+                    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+                    'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+                    'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+                    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+                    'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir',
+                    'Ladakh', 'Puducherry', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+                    'Lakshadweep', 'Andaman and Nicobar Islands'
+                  ];
+                  indianStates.forEach(state => { 
+                %>
+                  <option value="<%= state %>" <%= budget.state === state ? 'selected' : '' %>><%= state %></option>
+                <% }) %>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="city">City</label>
+              <input type="text" id="city" name="city" value="<%= budget.city || '' %>">
+            </div>
+          </div>
+        </div>
+
+        <!-- Budget Information -->
+        <div class="form-section">
+          <h3>💰 Budget Information</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="totalBudget">Total Budget (₹) *</label>
+              <input type="number" id="totalBudget" name="totalBudget" value="<%= budget.totalBudget %>" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="fiscalYear">Fiscal Year *</label>
+              <input type="text" id="fiscalYear" name="fiscalYear" value="<%= budget.fiscalYear %>" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="approvedBy">Approved By *</label>
+              <input type="text" id="approvedBy" name="approvedBy" value="<%= budget.approvedBy %>" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="type">Project Type *</label>
+              <select id="type" name="type" required>
+                <option value="Public" <%= budget.type === 'Public' ? 'selected' : '' %>>Public</option>
+                <option value="Private" <%= budget.type === 'Private' ? 'selected' : '' %>>Private</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Settings -->
+        <div class="form-section">
+          <h3>⚙️ Project Settings</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="projectType">Project Category</label>
+              <select id="projectType" name="projectType">
+                <option value="government" <%= budget.projectType === 'government' ? 'selected' : '' %>>Government</option>
+                <option value="college" <%= budget.projectType === 'college' ? 'selected' : '' %>>College</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="status">Current Status</label>
+              <select id="status" name="status">
+                <option value="draft" <%= budget.status === 'draft' ? 'selected' : '' %>>Draft</option>
+                <option value="pending" <%= budget.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                <option value="approved" <%= budget.status === 'approved' ? 'selected' : '' %>>Approved</option>
+                <option value="rejected" <%= budget.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
+                <option value="ongoing" <%= budget.status === 'ongoing' ? 'selected' : '' %>>Ongoing</option>
+                <option value="finished" <%= budget.status === 'finished' ? 'selected' : '' %>>Finished</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="visibility">Visibility</label>
+              <select id="visibility" name="visibility">
+                <option value="public" <%= budget.type === 'Public' ? 'selected' : '' %>>Public</option>
+                <option value="private" <%= budget.type === 'Private' ? 'selected' : '' %>>Private</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="priority">Priority Level</label>
+              <select id="priority" name="priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Budget Allocation -->
+        <div class="form-section">
+          <h3>📈 Budget Management</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="additionalBudget">Additional Budget (₹)</label>
+              <input type="number" id="additionalBudget" name="additionalBudget" step="0.01" placeholder="0.00">
+              <small class="help-text">Add extra budget to this project</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="budgetReason">Reason for Budget Change</label>
+              <textarea id="budgetReason" name="budgetReason" rows="3" placeholder="Explain why additional budget is needed..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- College Information (if applicable) -->
+        <div class="form-section" id="collegeSection" style="<%= budget.projectType === 'college' ? 'display: block;' : 'display: none;' %>">
+          <h3>🎓 College Information</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="collegeName">College Name</label>
+              <input type="text" id="collegeName" name="collegeName" value="<%= budget.collegeName || '' %>">
+            </div>
+            
+            <div class="form-group">
+              <label for="collegeType">College Type</label>
+              <select id="collegeType" name="collegeType">
+                <option value="">Select Type</option>
+                <option value="government" <%= budget.collegeType === 'government' ? 'selected' : '' %>>Government</option>
+                <option value="private" <%= budget.collegeType === 'private' ? 'selected' : '' %>>Private</option>
+                <option value="deemed" <%= budget.collegeType === 'deemed' ? 'selected' : '' %>>Deemed University</option>
+                <option value="autonomous" <%= budget.collegeType === 'autonomous' ? 'selected' : '' %>>Autonomous</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Editor Management -->
+        <div class="form-section">
+          <h3>👥 Editor Management</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="editorEmail">Editor Email</label>
+              <input type="email" id="editorEmail" name="editorEmail" value="<%= budget.editorEmail || '' %>" readonly>
+            </div>
+            
+            <div class="form-group">
+              <label for="editorPassword">Editor Password</label>
+              <div class="password-field">
+                <input type="password" id="editorPassword" name="editorPassword" value="<%= budget.editorPassword || '' %>" readonly>
+                <button type="button" onclick="togglePasswordVisibility('editorPassword')" class="toggle-password">👁️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">💾 Save Changes</button>
+          <button type="button" onclick="resetForm()" class="btn-secondary">🔄 Reset</button>
+          <a href="/admin/dashboard" class="btn-secondary">❌ Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.section-header h2 {
+  color: #1e293b;
+  margin: 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.edit-form-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.enhanced-form {
+  padding: 2rem;
+}
+
+.form-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color, #3b82f6);
+}
+
+.form-section h3 {
+  margin: 0 0 1.5rem 0;
+  color: #1e293b;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input[readonly] {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.help-text {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  flex: 1;
+  padding-right: 3rem;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-password:hover {
+  background-color: #f3f4f6;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
+</style>
+
+<script>
+// Toggle password visibility
+function togglePasswordVisibility(inputId) {
+  const input = document.getElementById(inputId);
+  const button = input.nextElementSibling;
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    button.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    button.textContent = '👁️';
+  }
+}
+
+// Show/hide college section based on project type
+document.getElementById('projectType').addEventListener('change', function() {
+  const collegeSection = document.getElementById('collegeSection');
+  if (this.value === 'college') {
+    collegeSection.style.display = 'block';
+  } else {
+    collegeSection.style.display = 'none';
+  }
+});
+
+// Reset form to original values
+function resetForm() {
+  if (confirm('Are you sure you want to reset all changes?')) {
+    document.getElementById('editBudgetForm').reset();
+    // Restore original values
+    document.getElementById('name').value = '<%= budget.name %>';
+    document.getElementById('department').value = '<%= budget.department %>';
+    document.getElementById('state').value = '<%= budget.state %>';
+    document.getElementById('city').value = '<%= budget.city || "" %>';
+    document.getElementById('totalBudget').value = '<%= budget.totalBudget %>';
+    document.getElementById('fiscalYear').value = '<%= budget.fiscalYear %>';
+    document.getElementById('approvedBy').value = '<%= budget.approvedBy %>';
+    document.getElementById('type').value = '<%= budget.type %>';
+    document.getElementById('projectType').value = '<%= budget.projectType %>';
+    document.getElementById('status').value = '<%= budget.status %>';
+    document.getElementById('visibility').value = '<%= budget.type %>';
+    document.getElementById('editorEmail').value = '<%= budget.editorEmail || "" %>';
+    document.getElementById('editorPassword').value = '<%= budget.editorPassword || "" %>';
+    <% if (budget.collegeName) { %>
+    document.getElementById('collegeName').value = '<%= budget.collegeName %>';
+    <% } %>
+    <% if (budget.collegeType) { %>
+    document.getElementById('collegeType').value = '<%= budget.collegeType %>';
+    <% } %>
+  }
+}
+
+// Form validation
+document.getElementById('editBudgetForm').addEventListener('submit', function(e) {
+  const totalBudget = parseFloat(document.getElementById('totalBudget').value);
+  const additionalBudget = parseFloat(document.getElementById('additionalBudget').value) || 0;
+  
+  if (totalBudget <= 0) {
+    e.preventDefault();
+    alert('Total budget must be greater than 0');
+    return;
+  }
+  
+  if (additionalBudget < 0) {
+    e.preventDefault();
+    alert('Additional budget cannot be negative');
+    return;
+  }
+  
+  // Show loading state
+  const submitBtn = this.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '💾 Saving...';
+});
+</script>
+
+<%- include('partials/footer') %>

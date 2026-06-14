@@ -1,0 +1,501 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-section">
+    <h3>📄 Upload Receipt with OCR</h3>
+    <p>
+      Upload a receipt image and let our AI automatically extract the
+      information for you.
+    </p>
+
+    <form id="receiptUploadForm" enctype="multipart/form-data">
+      <div class="upload-section">
+        <div class="file-upload-area" id="fileUploadArea">
+          <div class="upload-icon">📁</div>
+          <h4>Drop your receipt here or click to browse</h4>
+          <p>Supports JPG, PNG, PDF files up to 10MB</p>
+          <input
+            type="file"
+            id="receiptFile"
+            name="receipt"
+            accept="image/*,.pdf"
+            style="display: none"
+          />
+          <button
+            type="button"
+            onclick="document.getElementById('receiptFile').click()"
+          >
+            Choose File
+          </button>
+        </div>
+
+        <div class="file-preview" id="filePreview" style="display: none">
+          <img id="previewImage" src="" alt="Receipt Preview" />
+          <div class="file-info">
+            <h4 id="fileName"></h4>
+            <p id="fileSize"></p>
+            <button type="button" onclick="removeFile()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+          "
+        >
+          <div>
+            <label for="budgetId">Select Budget *</label>
+            <select id="budgetId" name="budgetId" required>
+              <option value="">Choose a budget...</option>
+              <% assignedBudgets.forEach(budget => { %>
+              <option value="<%= budget._id %>">
+                <%= budget.name %> - <%= budget.department %>
+              </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">Select category...</option>
+              <option value="office_supplies">Office Supplies</option>
+              <option value="travel">Travel</option>
+              <option value="equipment">Equipment</option>
+              <option value="utilities">Utilities</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="description">Description *</label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            required
+            placeholder="Enter transaction description"
+          />
+        </div>
+
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+          "
+        >
+          <div>
+            <label for="amount">Amount (₹) *</label>
+            <input
+              type="number"
+              id="amount"
+              name="amount"
+              step="0.01"
+              required
+              placeholder="0.00"
+            />
+          </div>
+
+          <div>
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" />
+          </div>
+        </div>
+
+        <div>
+          <label for="vendor">Vendor/Supplier</label>
+          <input
+            type="text"
+            id="vendor"
+            name="vendor"
+            placeholder="Enter vendor name"
+          />
+        </div>
+
+        <div>
+          <label for="notes">Notes</label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows="3"
+            placeholder="Additional notes..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="ocr-section" id="ocrSection" style="display: none">
+        <h4>🤖 OCR Extracted Data</h4>
+        <div class="ocr-results" id="ocrResults">
+          <!-- OCR results will be populated here -->
+        </div>
+        <button type="button" onclick="useOCRData()" class="btn-ai">
+          Use OCR Data
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" id="submitBtn">
+          Upload Receipt & Create Transaction
+        </button>
+        <button type="button" onclick="clearForm()" class="btn-secondary">
+          Clear Form
+        </button>
+      </div>
+    </form>
+
+    <div class="upload-progress" id="uploadProgress" style="display: none">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <p id="progressText">Uploading...</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .upload-section {
+    margin-bottom: 2rem;
+  }
+
+  .file-upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--border-radius-lg);
+    padding: 3rem 2rem;
+    text-align: center;
+    background: rgba(241, 245, 249, 0.3);
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .file-upload-area:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+  }
+
+  .file-upload-area.dragover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .file-preview {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--card-gradient);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+  }
+
+  .file-preview img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+  }
+
+  .file-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .ocr-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: rgba(37, 99, 235, 0.05);
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+  }
+
+  .ocr-results {
+    background: white;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    border: 1px solid #e2e8f0;
+  }
+
+  .ocr-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .ocr-item:last-child {
+    border-bottom: none;
+  }
+
+  .ocr-label {
+    font-weight: 600;
+    color: var(--secondary-color);
+  }
+
+  .ocr-value {
+    color: var(--primary-color);
+  }
+
+  .form-section {
+    margin: 2rem 0;
+  }
+
+  .form-section label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--secondary-color);
+  }
+
+  .form-section input,
+  .form-section select,
+  .form-section textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    background: white;
+    transition: var(--transition);
+    margin-bottom: 1rem;
+  }
+
+  .form-section input:focus,
+  .form-section select:focus,
+  .form-section textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .upload-progress {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+  }
+</style>
+
+<script>
+  let ocrData = null;
+
+  document
+    .getElementById("receiptFile")
+    .addEventListener("change", handleFileSelect);
+  document
+    .getElementById("fileUploadArea")
+    .addEventListener("click", () =>
+      document.getElementById("receiptFile").click()
+    );
+  document
+    .getElementById("fileUploadArea")
+    .addEventListener("dragover", handleDragOver);
+  document
+    .getElementById("fileUploadArea")
+    .addEventListener("drop", handleDrop);
+  document
+    .getElementById("receiptUploadForm")
+    .addEventListener("submit", handleSubmit);
+
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+      displayFilePreview(file);
+    }
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault();
+    document.getElementById("fileUploadArea").classList.add("dragover");
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    document.getElementById("fileUploadArea").classList.remove("dragover");
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      document.getElementById("receiptFile").files = files;
+      displayFilePreview(files[0]);
+    }
+  }
+
+  function displayFilePreview(file) {
+    const preview = document.getElementById("filePreview");
+    const uploadArea = document.getElementById("fileUploadArea");
+
+    uploadArea.style.display = "none";
+    preview.style.display = "flex";
+
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("fileSize").textContent = formatFileSize(file.size);
+
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById("previewImage").src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeFile() {
+    document.getElementById("filePreview").style.display = "none";
+    document.getElementById("fileUploadArea").style.display = "block";
+    document.getElementById("receiptFile").value = "";
+    document.getElementById("ocrSection").style.display = "none";
+    ocrData = null;
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const submitBtn = document.getElementById("submitBtn");
+    const progress = document.getElementById("uploadProgress");
+
+    submitBtn.disabled = true;
+    progress.style.display = "block";
+
+    try {
+      const response = await fetch("/editor/receipts/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        alert(
+          "Upload failed: Server returned an error page. Please check your login status."
+        );
+        return;
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (result.ocrData) {
+          ocrData = result.ocrData;
+          displayOCRResults(result.ocrData);
+        }
+
+        alert("Receipt uploaded successfully!");
+
+        clearForm();
+      } else {
+        alert("Upload failed: " + result.error);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload failed: " + error.message);
+    } finally {
+      submitBtn.disabled = false;
+      progress.style.display = "none";
+    }
+  }
+
+  function displayOCRResults(data) {
+    const ocrSection = document.getElementById("ocrSection");
+    const ocrResults = document.getElementById("ocrResults");
+
+    ocrSection.style.display = "block";
+
+    let html = "";
+    if (data.vendor)
+      html += `<div class="ocr-item"><span class="ocr-label">Vendor:</span><span class="ocr-value">${data.vendor}</span></div>`;
+    if (data.amount)
+      html += `<div class="ocr-item"><span class="ocr-label">Amount:</span><span class="ocr-value">₹${data.amount}</span></div>`;
+    if (data.date)
+      html += `<div class="ocr-item"><span class="ocr-label">Date:</span><span class="ocr-value">${data.date}</span></div>`;
+    if (data.total)
+      html += `<div class="ocr-item"><span class="ocr-label">Total:</span><span class="ocr-value">₹${data.total}</span></div>`;
+    if (data.tax)
+      html += `<div class="ocr-item"><span class="ocr-label">Tax:</span><span class="ocr-value">₹${data.tax}</span></div>`;
+
+    if (data.items && data.items.length > 0) {
+      html +=
+        '<div class="ocr-item"><span class="ocr-label">Items:</span><span class="ocr-value"></span></div>';
+      data.items.forEach((item) => {
+        html += `<div class="ocr-item" style="margin-left: 1rem;"><span class="ocr-label">${item.description}</span><span class="ocr-value">₹${item.amount}</span></div>`;
+      });
+    }
+
+    ocrResults.innerHTML = html;
+  }
+
+  function useOCRData() {
+    if (!ocrData) return;
+
+    if (ocrData.vendor)
+      document.getElementById("vendor").value = ocrData.vendor;
+    if (ocrData.amount)
+      document.getElementById("amount").value = ocrData.amount;
+    if (ocrData.date)
+      document.getElementById("date").value = formatDateForInput(ocrData.date);
+
+    if (!document.getElementById("description").value && ocrData.vendor) {
+      document.getElementById(
+        "description"
+      ).value = `Payment to ${ocrData.vendor}`;
+    }
+  }
+
+  function formatDateForInput(dateString) {
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0];
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function clearForm() {
+    document.getElementById("receiptUploadForm").reset();
+    removeFile();
+    document.getElementById("ocrSection").style.display = "none";
+    ocrData = null;
+  }
+</script>
+
+<%- include('partials/footer') %>

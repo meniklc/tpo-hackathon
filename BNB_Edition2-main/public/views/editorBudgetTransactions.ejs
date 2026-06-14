@@ -1,0 +1,356 @@
+<%- include('partials/header') %>
+
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>📋 Transactions - <%= budget.name %></h2>
+    <div class="budget-info">
+      <p><strong>Department:</strong> <%= budget.department %></p>
+      <p>
+        <strong>Total Budget:</strong> ₹<%= budget.totalBudget.toLocaleString()
+        %>
+      </p>
+      <p>
+        <strong>Remaining:</strong> ₹<%= budget.remaining.toLocaleString() %>
+      </p>
+    </div>
+  </div>
+
+  <div class="dashboard-section">
+    <div class="section-header">
+      <h3>📊 All Transactions</h3>
+      <div class="section-actions">
+        <a href="/editor/transaction/new"
+          ><button class="btn-primary">➕ Add Transaction</button></a
+        >
+        <a href="/editor/dashboard"
+          ><button class="btn-secondary">← Back to Dashboard</button></a
+        >
+      </div>
+    </div>
+
+    <% if (transactions.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3>No Transactions Yet</h3>
+      <p>Start by adding your first transaction for this budget.</p>
+      <a href="/editor/transaction/new"
+        ><button class="btn-primary">Add First Transaction</button></a
+      >
+    </div>
+    <% } else { %>
+    <div class="transactions-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Vendor</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Receipt</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% transactions.forEach(transaction => { %>
+          <tr>
+            <td>
+              <div class="transaction-description">
+                <strong><%= transaction.description %></strong>
+                <% if (transaction.notes) { %>
+                <br /><small class="transaction-notes"
+                  ><%= transaction.notes %></small
+                >
+                <% } %>
+              </div>
+            </td>
+            <td class="amount">₹<%= transaction.amount.toLocaleString() %></td>
+            <td>
+              <span
+                class="category-badge category-<%= transaction.category || 'other' %>"
+              >
+                <%= transaction.category || 'Other' %>
+              </span>
+            </td>
+            <td><%= transaction.vendor || '-' %></td>
+            <td><%= new Date(transaction.createdAt).toLocaleDateString() %></td>
+            <td>
+              <span class="status-badge status-<%= transaction.status %>">
+                <%= transaction.status %>
+              </span>
+            </td>
+            <td>
+              <% if (transaction.receipt && transaction.receipt.url) { %>
+              <a
+                href="<%= transaction.receipt.url %>"
+                target="_blank"
+                class="receipt-link"
+              >
+                📄 View Receipt
+              </a>
+              <% } else { %>
+              <span class="no-receipt">No Receipt</span>
+              <% } %>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  onclick="viewTransaction('<%= transaction._id %>')"
+                  class="btn-small btn-info"
+                >
+                  👁️
+                </button>
+                <% if (transaction.status === 'pending') { %>
+                <button
+                  onclick="editTransaction('<%= transaction._id %>')"
+                  class="btn-small btn-warning"
+                >
+                  ✏️
+                </button>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<style>
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: var(--card-gradient);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-light);
+  }
+
+  .budget-info {
+    text-align: right;
+  }
+
+  .budget-info p {
+    margin: 0.25rem 0;
+    color: var(--secondary-color);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .section-actions {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .transactions-table {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+  }
+
+  .transactions-table table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .transactions-table th {
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+  }
+
+  .transactions-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .transactions-table tr:hover {
+    background: rgba(37, 99, 235, 0.05);
+  }
+
+  .transaction-description {
+    max-width: 200px;
+  }
+
+  .transaction-notes {
+    color: var(--secondary-color);
+    font-style: italic;
+  }
+
+  .amount {
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .category-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .category-office_supplies {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+  }
+  .category-travel {
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+  }
+  .category-equipment {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+  .category-utilities {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+  }
+  .category-maintenance {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+  .category-other {
+    background: rgba(107, 114, 128, 0.1);
+    color: #374151;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+  .status-approved {
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+  }
+  .status-rejected {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  .receipt-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .receipt-link:hover {
+    text-decoration: underline;
+  }
+
+  .no-receipt {
+    color: var(--secondary-color);
+    font-style: italic;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-small {
+    padding: 0.5rem;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+  }
+
+  .btn-info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+  }
+
+  .btn-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+
+  .btn-small:hover {
+    transform: scale(1.05);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--card-gradient);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-light);
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+  }
+
+  .empty-state p {
+    margin-bottom: 2rem;
+    color: var(--secondary-color);
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .budget-info {
+      text-align: left;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .transactions-table {
+      overflow-x: auto;
+    }
+
+    .transactions-table table {
+      min-width: 800px;
+    }
+  }
+</style>
+
+<script>
+  function viewTransaction(transactionId) {
+    alert("View transaction: " + transactionId);
+  }
+
+  function editTransaction(transactionId) {
+    alert("Edit transaction: " + transactionId);
+  }
+</script>
+
+<%- include('partials/footer') %>

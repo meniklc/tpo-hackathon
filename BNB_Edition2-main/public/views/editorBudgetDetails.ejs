@@ -1,0 +1,337 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="budget-header">
+    <h2><%= budget.name %></h2>
+    <div class="header-actions">
+      <div class="status-badges">
+        <span class="status-badge status-<%= budget.status %>"><%= budget.status %></span>
+        <% if(budget.type === 'Public') { %>
+          <span class="type-badge type-public">Public</span>
+        <% } else { %>
+          <span class="type-badge type-private">Private</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="budget-info">
+    <div class="info-grid">
+      <div class="info-item">
+        <strong>Department:</strong> <%= budget.department %>
+      </div>
+      <div class="info-item">
+        <strong>State:</strong> <%= budget.state %>
+      </div>
+      <div class="info-item">
+        <strong>Country:</strong> <%= budget.country %>
+      </div>
+      <div class="info-item">
+        <strong>Total Budget:</strong> ₹<%= budget.totalBudget.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Spent:</strong> ₹<%= budget.spent.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Remaining:</strong> ₹<%= budget.remaining.toLocaleString() %>
+      </div>
+      <div class="info-item">
+        <strong>Fiscal Year:</strong> <%= budget.fiscalYear %>
+      </div>
+      <div class="info-item">
+        <strong>Approved By:</strong> <%= budget.approvedBy %>
+      </div>
+      <div class="info-item">
+        <strong>Type:</strong> <%= budget.type %>
+      </div>
+    </div>
+    
+    <div class="progress-section">
+      <h3>Budget Utilization</h3>
+      <div class="progress-bar large">
+        <% const progressPercent = budget.totalBudget > 0 ? Math.min(100, (budget.spent / budget.totalBudget * 100)) : 0; %>
+        <div class="progress-fill" style="width: <%= progressPercent %>%"></div>
+      </div>
+      <p class="progress-text"><%= budget.totalBudget > 0 ? ((budget.spent / budget.totalBudget) * 100).toFixed(1) : 0 %>% utilized</p>
+    </div>
+  </div>
+
+  <!-- Editor Actions -->
+  <div class="editor-actions">
+    <h3>📝 Manage Budget</h3>
+    <div class="action-buttons">
+      <a href="/editor/budget/<%= budget._id %>/transactions">
+        <button class="btn-primary">💰 View Transactions</button>
+      </a>
+      <a href="/editor/transaction/new?budgetId=<%= budget._id %>">
+        <button class="btn-success">➕ Add Transaction</button>
+      </a>
+      <a href="/budget/<%= budget._id %>">
+        <button class="btn-info">👁️ View Details</button>
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="recent-transactions">
+    <h3>💰 Recent Transactions</h3>
+    <div class="transactions-list">
+      <p>Use the "View Transactions" button above to see all transactions for this budget.</p>
+    </div>
+  </div>
+</div>
+
+<style>
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: var(--card-gradient);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-light);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.status-badges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-draft {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.status-approved {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.status-ongoing {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+.type-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.type-public {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.type-private {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.budget-info {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--border-radius);
+}
+
+.info-item strong {
+  color: #64748b;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item span {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.progress-section {
+  margin-top: 2rem;
+}
+
+.progress-section h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+.progress-bar {
+  height: 20px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar.large {
+  height: 30px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+.editor-actions {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+.editor-actions h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1e293b;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background: #1e7e34;
+  transform: translateY(-1px);
+}
+
+.btn-info {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
+.recent-transactions {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.recent-transactions h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #1e293b;
+}
+
+.transactions-list p {
+  color: #64748b;
+  text-align: center;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+@media (max-width: 768px) {
+  .budget-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<%- include('partials/footer') %>
